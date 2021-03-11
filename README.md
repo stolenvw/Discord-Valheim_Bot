@@ -1,7 +1,8 @@
 # Discord-Valheim_Bot
 Valheim discord bot based off of ckbaudio / valheim-discord-bot (https://github.com/ckbaudio/valheim-discord-bot)
 
-MYSQL Tabel INFO
+## MYSQL Tabel INFO
+```
 CREATE TABLE `players` (
   `id` int NOT NULL,
   `user` varchar(100) NOT NULL,
@@ -21,3 +22,4 @@ ALTER TABLE `players`
 
 ALTER TABLE `players`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+```
