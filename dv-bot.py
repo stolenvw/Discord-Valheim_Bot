@@ -112,11 +112,10 @@ async def help_ctx(ctx):
     await ctx.send(embed=help_embed)
 
 @bot.command(name="deaths")
-async def leaderboards(ctx):
-    ldrembed = discord.Embed(title=":skull_crossbones: __Death Leaderboards (top 5)__ :skull_crossbones:", color=0xFFC02C)
-    de = 0
+async def leaderboards(ctx, arg: typing.Optional[str] = '5'):
+    ldrembed = discord.Embed(title=":skull_crossbones: __Death Leaderboards (top " + arg + ")__ :skull_crossbones:", color=0xFFC02C)
     mycursor = get_cursor()
-    sql = """SELECT user, deaths FROM players WHERE deaths > '%s' ORDER BY deaths DESC LIMIT 5""" % (de)
+    sql = """SELECT user, deaths FROM players WHERE deaths > 0 ORDER BY deaths DESC LIMIT %s""" % (arg)
     mycursor.execute(sql)
     Info = mycursor.fetchall()
     row_count = mycursor.rowcount
@@ -219,7 +218,7 @@ async def playstats(ctx, arg):
     else:
         await ctx.send(content=':no_entry_sign: **' + arg + '** Not Found')
     mycursor.close()
-    
+
 @bot.command(name="active")
 async def leaderboards(ctx):
     mycursor = get_cursor()
