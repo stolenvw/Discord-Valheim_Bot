@@ -97,7 +97,9 @@ async def on_ready():
     print('Log channel : %d' % (lchanID))
     if config.USEVCSTATS == True:
         print('VoIP channel: %d' % (chanID))
-        bot.loop.create_task(serverstatsupdate())
+        channel = bot.get_channel(chanID)
+        await channel.edit(name=f"{emoji.emojize(':house:')} On Line: waiting")
+        bot.loop.create_task(serveronline())
 
 @bot.command(name='help')
 async def help_ctx(ctx):
@@ -125,7 +127,6 @@ async def leaderboards(ctx, arg: typing.Optional[str] = '5'):
         leader = ''
         pdname = ind[0]
         pddeath = ind[1]
-        # print(df_index[x], df_score[x])
         if pddeath == 1 :
             grammarnazi = 'death'
         if l == 1:
@@ -142,27 +143,30 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     user_range = 0
     if tmf.lower() in ['w', 'week', 'weeks']:
         user_range = 168 - 1
+        tlookup = int(time.time()) - 604800
         interval = 24
         date_format = '%m/%d'
         timedo = 'week'
         description = 'Players online in the past ' + timedo + ':'
     elif tmf.lower() in ['12', '12hrs', '12h', '12hr']:
         user_range = 12 - 0.15
+        tlookup = int(time.time()) - 43200
         interval = 1
         date_format = '%H'
         timedo = '12hrs'
         description = 'Players online in the past ' + timedo + ':'
     else:
         user_range = 24 - 0.30
+        tlookup = int(time.time()) - 86400
         interval = 2
         date_format = '%H'
         timedo = '24hrs'
         description = 'Players online in the past ' + timedo + ':'
 
-    #Get data from csv
-    df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
+    #Get data from mysql
+    sqls = """SELECT date, users FROM serverstats WHERE timestamp BETWEEN '%s' AND '%s'""" % (tlookup, int(time.time()))
+    df = pd.read_sql(sqls, mydb, parse_dates=['date'])
     lastday = datetime.now() - timedelta(hours = user_range)
-    last24 = df[df[0]>=(lastday)]
 
     # Plot formatting / styling matplotlib
     plt.style.use('seaborn-pastel')
@@ -184,7 +188,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
 
     #Plot and rasterize figure
     plt.gcf().set_size_inches([5.5,3.0])
-    plt.plot(last24[0], last24[1])
+    plt.plot(df['date'], df['users'], drawstyle='steps')
     plt.tick_params(axis='both', which='both', bottom=False, left=False)
     plt.margins(x=0,y=0,tight=True)
     plt.tight_layout()
@@ -268,13 +272,13 @@ async def mainloop(file):
                     if(re.search(pjoin, line)):
                         logJoin = re.search(pjoin, line).group(1)
                         logID = re.search(pjoin, line).group(2)
+                        tnow = datetime.now()
                         mycursor = get_cursor()
                         sql = """SELECT id, ingame FROM players WHERE user = '%s'""" % (logJoin)
                         mycursor.execute(sql)
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 0:
-                           tnow = datetime.now()
                            StartDate = tnow.strftime("%m/%d/%Y %H:%M:%S")
                            JoinTime = int(time.time())
                            InGame = 1
@@ -295,9 +299,13 @@ async def mainloop(file):
                                 mycursor.execute(sql)
                                 mydb.commit()
                                 await lchannel.send(':airplane_arriving: **' + logJoin + '** has joined the party!')
+                        sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), await serverstatsupdate())
+                        mycursor.execute(sql2)
+                        mydb.commit()
                         mycursor.close()
                     if(re.search(pquit, line)):
                         logquit = re.search(pquit, line).group(1)
+                        tnow = datetime.now()
                         mycursor = get_cursor()
                         sql = """SELECT id, user, jointime, playtime FROM players WHERE valid = '%s'""" % (logquit)
                         mycursor.execute(sql)
@@ -313,6 +321,9 @@ async def mainloop(file):
                            mycursor.execute(sql)
                            mydb.commit()
                            await lchannel.send(':airplane_departure: **' + Info[1] + '** has left the party! Online for: ' + ponline + '')
+                           sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), await serverstatsupdate())
+                           mycursor.execute(sql2)
+                           mydb.commit()
                         mycursor.close()
                     if(re.search(pfind, line)):
                         newitem = re.search(pfind, line).group(1)
@@ -323,18 +334,39 @@ async def mainloop(file):
         print('To generate server logs, run server with -logfile launch flag')
 
 async def serverstatsupdate():
-	await bot.wait_until_ready()
-	while not bot.is_closed():
-		try:
-			with ServerQuerier(config.SERVER_ADDRESS) as server:
-				channel = bot.get_channel(chanID)
-				await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {server.info()['player_count']}" +" / 10")
+    try:
+        with ServerQuerier(config.SERVER_ADDRESS) as server:
+            channel = bot.get_channel(chanID)
+            oplayers = server.info()['player_count']
+            await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {server.info()['player_count']}" +" / 10")
+    except NoResponseError:
+        print(Fore.RED + await timenow(), 'No reply from A2S' + Style.RESET_ALL)
+        channel = bot.get_channel(chanID)
+        oplayers = 0
+        await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
+    else:
+        return oplayers
 
-		except NoResponseError:
-			print(Fore.RED + await timenow(), 'No reply from A2S, retrying (30s)...' + Style.RESET_ALL)
-			channel = bot.get_channel(chanID)
-			await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
-		await asyncio.sleep(30)
+async def serveronline():
+    global sonline
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        try:
+            with ServerQuerier(config.SERVER_ADDRESS) as server:
+                sonline = 1
+        except NoResponseError:
+            print(Fore.RED + await timenow(), 'No reply from A2S, retrying (60s)...' + Style.RESET_ALL)
+            channel = bot.get_channel(chanID)
+            await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
+            if sonline == 1:
+                sonline = 0
+                tnow = datetime.now()
+                mycursor = get_cursor()
+                sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), sonline)
+                mycursor.execute(sql2)
+                mydb.commit()
+                mycursor.close()
+        await asyncio.sleep(60)
 
 bot.loop.create_task(mainloop(file))
 bot.run(config.BOT_TOKEN)
