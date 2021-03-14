@@ -68,26 +68,6 @@ async def timenow():
     gettime = now.strftime("%d/%m/%Y %H:%M:%S")
     return gettime
 
-# Basic file checking
-def check_csvs():
-    try:
-        os.makedirs('csv')
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            print(Fore.RED + 'Cannot create csv directory' + Style.RESET_ALL)
-            raise os._exit(1)
-
-    files = ['csv/playerstats.csv']
-    for f in files:
-        if os.path.isfile(f):
-            print(Fore.GREEN + f'{f} found!' + Style.RESET_ALL)
-        else:
-            with open(f, 'w+'):
-                print(Fore.YELLOW + f'{f} doesn\'t exist, creating new...' + Style.RESET_ALL)
-            time.sleep(0.2)
-
-check_csvs()
-
 def convert(n):
     return str(timedelta(seconds = n))
 
@@ -188,7 +168,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
 
     #Plot and rasterize figure
     plt.gcf().set_size_inches([5.5,3.0])
-    plt.plot(df['date'], df['users'], drawstyle='steps')
+    plt.plot(df['date'], df['users'], drawstyle='steps-post')
     plt.tick_params(axis='both', which='both', bottom=False, left=False)
     plt.margins(x=0,y=0,tight=True)
     plt.tight_layout()
