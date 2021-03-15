@@ -28,6 +28,7 @@ pfind = '.*? Found location of type (\w+)'
 
 server_name = config.SERVER_NAME
 bot = commands.Bot(command_prefix='!', help_command=None)
+sonline = 1
 
     # maybe in the future for reformatting output of random mob events
     # eventype = ['Skeletons', 'Blobs', 'Forest Trolls', 'Wolves', 'Surtlings']
@@ -56,6 +57,7 @@ def get_cursor():
         mydb.ping(reconnect=True, attempts=3, delay=5)
     except mysql.connector.Error as err:
         mydbconnect()
+        print(Fore.RED + "Connection to MySQL database went away... Reconnecting " + Style.RESET_ALL)
     return mydb.cursor()
 
 def signal_handler(signal, frame):          # Method for catching SIGINT, cleaner output for restarting bot
@@ -78,7 +80,7 @@ async def on_ready():
     if config.USEVCSTATS == True:
         print('VoIP channel: %d' % (chanID))
         channel = bot.get_channel(chanID)
-        await channel.edit(name=f"{emoji.emojize(':house:')} On Line: waiting")
+        await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
         bot.loop.create_task(serveronline())
 
 @bot.command(name='help')
@@ -144,6 +146,8 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
         description = 'Players online in the past ' + timedo + ':'
 
     #Get data from mysql
+    mycursor = get_cursor()
+    mycursor.close()
     sqls = """SELECT date, users FROM serverstats WHERE timestamp BETWEEN '%s' AND '%s'""" % (tlookup, int(time.time()))
     df = pd.read_sql(sqls, mydb, parse_dates=['date'])
     lastday = datetime.now() - timedelta(hours = user_range)
@@ -333,7 +337,10 @@ async def serveronline():
     while not bot.is_closed():
         try:
             with ServerQuerier(config.SERVER_ADDRESS) as server:
-                sonline = 1
+                meonline = server.info()['player_count']
+                if sonline == 0:
+                    sonline = 1
+                    await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
         except NoResponseError:
             print(Fore.RED + await timenow(), 'No reply from A2S, retrying (60s)...' + Style.RESET_ALL)
             channel = bot.get_channel(chanID)
