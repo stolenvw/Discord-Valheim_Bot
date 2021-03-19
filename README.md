@@ -26,3 +26,15 @@ CREATE TABLE `serverstats` (
   UNIQUE KEY `timestamp` (`timestamp`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
+```
+CREATE TABLE `events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `type` text NOT NULL,
+  `smessage` text NOT NULL,
+  `image` text NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`(5))
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `events` VALUES (1,'Skeletons','Skeleton Surprise','skeleton.png'),(2,'Blobs','..','Ooze.png'),(3,'Foresttrolls','The ground is shaking','troll.png'),(4,'Wolves','You are being hunted','wolf.png'),(5,'Surtlings','There\'s a smell of sulfur in the air','surtling.png');
+```
