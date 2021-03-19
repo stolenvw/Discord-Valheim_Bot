@@ -1,4 +1,4 @@
-import os, time, re, csv, discord, asyncio, config, emoji, sys, colorama, typing, signal, errno, mysql.connector
+import os, time, re, discord, asyncio, config, emoji, sys, colorama, typing, signal, errno, mysql.connector
 from valve.source.a2s import ServerQuerier, NoResponseError
 from matplotlib import pyplot as plt
 from datetime import datetime, timedelta
@@ -89,10 +89,24 @@ async def help_ctx(ctx):
     help_embed.add_field(name="{}stats <n>".format(bot.command_prefix),
                         value="Plots a graph of connected players over the last X hours.\n Example: `{}stats 12` \n Available: 24, 12, w (*default: 24*)".format(bot.command_prefix),
                         inline=True)
-    help_embed.add_field(name="{}deaths".format(bot.command_prefix),
-                        value="Shows a top 5 leaderboard of players with the most deaths. \n Example:`{}deaths`".format(bot.command_prefix),
+    help_embed.add_field(name="{}deaths <n>".format(bot.command_prefix),
+                        value="Shows a top 5 leaderboard of players with the most deaths. \n Example:`{}deaths 3` \n Available: 1-10 (*default: 10*)".format(bot.command_prefix),
                         inline=True)
-    help_embed.set_footer(text="Valbot v0.42")
+    help_embed.add_field(name="{}playerstats <playername>".format(bot.command_prefix),
+                        value="Shows player stats on active monitored world. \n Example: '{}playerstats stolenvw'".format(bot.command_prefix),
+                        inline=True)
+    help_embed.add_field(name="{}active".format(bot.command_prefix),
+                        value="Shows who is currently logged into the server and how long they have been on for. \n Example: '{}active'".format(bot.command_prefix),
+                        inline=True)
+    is_owner = await ctx.bot.is_owner(ctx.author)
+    if is_owner:
+        help_embed.add_field(name="**Owner**",
+                            value="Owner only commands",
+                            inline=False)
+        help_embed.add_field(name="{}setstatus <type> <message>".format(bot.command_prefix),
+                            value='Set status message of the bot. \n Example: `{}setstatus playing "Valheim"` \n Available type: playing, watching, listening'.format(bot.command_prefix),
+                            inline=True)
+    help_embed.set_footer(text="ckbaudio Valbot v0.42, stolenvw edit v0.51")
     await ctx.send(embed=help_embed)
 
 @bot.command(name="deaths")
@@ -230,6 +244,20 @@ async def leaderboards(ctx):
          await ctx.send(embed=ldrembed)
     mycursor.close()
 
+@bot.command(name="setstatus")
+@commands.is_owner()
+async def setstatus(ctx, arg: typing.Optional[str] = '0', arg1: typing.Optional[str] = '1'):
+      if arg == "playing":
+         await bot.change_presence(activity=discord.Game(arg1))
+#      elif arg == "streaming":
+#         await bot.change_presence(activity=discord.Streaming(name=arg1, url=arg2))
+      elif arg == "watching":
+         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=arg1))
+      elif arg == "listening":
+         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=arg1))
+      else:
+           await ctx.channel.send('Usage: `{}setstatus <playing|watching|listening> "<Some activity>"`'.format(bot.command_prefix))
+
 async def mainloop(file):
     await bot.wait_until_ready()
     lchannel = bot.get_channel(lchanID)
@@ -252,7 +280,17 @@ async def mainloop(file):
                         await lchannel.send(':skull: **' + pname + '** just died!')
                     if(re.search(pevent, line)):
                         eventID = re.search(pevent, line).group(1)
-                        await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
+                        mycursor = get_cursor()
+                        sql = """SELECT type, smessage, image FROM events WHERE type = '%s' LIMIT 1""" % (eventID)
+                        mycursor.execute(sql)
+                        Info = mycursor.fetchall()
+                        Info=Info[0]
+                        image = discord.File('img/' + Info[2], filename=Info[2])
+                        embed = discord.Embed(title=Info[0], colour=discord.Colour(0xb6000e), description="*" + Info[1] + "*")
+                        embed.set_thumbnail(url='attachment://' + Info[2])
+                        embed.set_author(name="📢 Random Mob Event")
+                        await lchannel.send(file=image, embed=embed)
+                        mycursor.close()
                     if(re.search(pjoin, line)):
                         logJoin = re.search(pjoin, line).group(1)
                         logID = re.search(pjoin, line).group(2)
