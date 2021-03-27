@@ -1,5 +1,4 @@
-import os, time, re, discord, asyncio, config, emoji, sys, colorama, typing, signal, errno, mysql.connector
-from valve.source.a2s import ServerQuerier, NoResponseError
+import os, time, re, discord, asyncio, config, emoji, sys, colorama, typing, signal, errno, mysql.connector, a2s
 from matplotlib import pyplot as plt
 from datetime import datetime, timedelta
 from colorama import Fore, Style, init
@@ -25,6 +24,13 @@ pevent = '.*? Random event set:(\w+)'
 pjoin = '.*? Got character ZDOID from (\w+) : ([-0-9]*:[-0-9]*)$'
 pquit = '.*? Destroying abandoned non persistent zdo ([-0-9]*:[0-9]*) owner [-0-9]*$'
 pfind = '.*? Found location of type (\w+)'
+# Extra Server Info
+# Seed getting log line was removed, leaving here commented out just incase it comes back
+#sseed = '.*? Initializing world generator seed:(\w+) \( ([-0-9]+) \)\s{1,}menu:False  worldgen version:([0-9]{1,})$'
+ssaved1 = '.*? Saved ([0-9]+) zdos$'
+ssaved2 = '.*? World saved \( ([0-9]+\.[0-9]+)ms \)$'
+sversion = '.*? Valheim version:([\.0-9]+)$'
+gdays = '.*? Time [\.0-9]+, day:([0-9]+)\s{1,}nextm:[\.0-9]+\s+skipspeed:[\.0-9]+$'
 
 server_name = config.SERVER_NAME
 bot = commands.Bot(command_prefix='!', help_command=None)
@@ -79,8 +85,6 @@ async def on_ready():
     print('Log channel : %d' % (lchanID))
     if config.USEVCSTATS == True:
         print('VoIP channel: %d' % (chanID))
-        channel = bot.get_channel(chanID)
-        await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
         bot.loop.create_task(serveronline())
 
 @bot.command(name='help')
@@ -224,8 +228,7 @@ async def playstats(ctx, arg):
 @bot.command(name="active")
 async def leaderboards(ctx):
     mycursor = get_cursor()
-    de = "1"
-    sql = """SELECT user, jointime FROM players WHERE ingame = '%s' ORDER BY jointime LIMIT 10""" % (de)
+    sql = """SELECT user, jointime FROM players WHERE ingame = 1 ORDER BY jointime LIMIT 10"""
     mycursor.execute(sql)
     Info = mycursor.fetchall()
     row_count = mycursor.rowcount
@@ -350,6 +353,55 @@ async def mainloop(file):
                     if(re.search(pfind, line)):
                         newitem = re.search(pfind, line).group(1)
                         await lchannel.send(':crossed_swords: Found location of **' + newitem + '**')
+                    if config.EXSERVERINFO == True:
+                        if(re.search(ssaved1, line)):
+                            save1 = re.search(ssaved1, line).group(1)
+                            mycursor = get_cursor()
+                            sql = """INSERT INTO exstats (savezdos, timestamp) VALUES ('%s', '%s')""" % (save1, int(time.time()))
+                            mycursor.execute(sql)
+                            mydb.commit()
+                            mycursor.close()
+                        if(re.search(ssaved2, line)):
+                            save2 = re.search(ssaved2, line).group(1)
+                            mycursor = get_cursor()
+                            tlookup = int(time.time()) - 120
+                            sql = """SELECT id FROM exstats WHERE savesec is null AND timestamp BETWEEN '%s' AND '%s' LIMIT 1""" % (tlookup, int(time.time()))
+                            mycursor.execute(sql)
+                            Info = mycursor.fetchall()
+                            row_count = mycursor.rowcount
+                            if row_count == 1:
+                                Info=Info[0]
+                                sql = """UPDATE exstats SET savesec = '%s' WHERE id = '%s'""" % (save2, Info[0])
+                                mycursor.execute(sql)
+                                mydb.commit()
+                            else:
+                                print('ERROR: Could not find save zdos info')
+                            mycursor.close()
+                        if(re.search(sversion, line)):
+                            serversion = re.search(sversion, line).group(1)
+                            mycursor = get_cursor()
+                            sql = """SELECT id, serverversion FROM exstats WHERE id = 1"""
+                            mycursor.execute(sql)
+                            Info = mycursor.fetchall()
+                            row_count = mycursor.rowcount
+                            if row_count == 0:
+                                await lchannel.send('**ERROR:** Extra server info is set, but missing database table/info')
+                            else:
+                                Info=Info[0]
+                                if serversion != Info[1]:
+                                    sql = """UPDATE exstats SET serverversion = '%s' WHERE id = '%s'""" % (serversion, Info[0])
+                                    mycursor.execute(sql)
+                                    mydb.commit()
+                                    await lchannel.send('**INFO:** Server has been updated to version: ' + serversion + '')
+                            mycursor.close()
+                        if(re.search(gdays, line)):
+                            gamedays = re.search(gdays, line).group(1)
+                            mycursor = get_cursor()
+                            sql = """INSERT INTO exstats (gameday, timestamp) VALUES ('%s', '%s')""" % (gamedays, int(time.time()))
+                            mycursor.execute(sql)
+                            mydb.commit()
+                            await lchannel.send('**INFO:** Server reported in game day as: ' + gamedays + '')
+                            mycursor.close()
                     await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
@@ -357,12 +409,12 @@ async def mainloop(file):
 
 async def serverstatsupdate():
     try:
-        with ServerQuerier(config.SERVER_ADDRESS) as server:
+        if a2s.info(config.SERVER_ADDRESS):
             channel = bot.get_channel(chanID)
-            oplayers = server.info()['player_count']
-            await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {server.info()['player_count']}" +" / 10")
-    except NoResponseError:
-        print(Fore.RED + await timenow(), 'No reply from A2S' + Style.RESET_ALL)
+            oplayers = a2s.info(config.SERVER_ADDRESS).player_count
+            await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {oplayers}" +" / 10")
+    except Exception as e:
+        print(Fore.RED + await timenow(), e, 'from A2S' + Style.RESET_ALL)
         channel = bot.get_channel(chanID)
         oplayers = 0
         await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
@@ -374,13 +426,13 @@ async def serveronline():
     await bot.wait_until_ready()
     while not bot.is_closed():
         try:
-            with ServerQuerier(config.SERVER_ADDRESS) as server:
-                meonline = server.info()['player_count']
+            if a2s.info(config.SERVER_ADDRESS):
+                meonline = a2s.info(config.SERVER_ADDRESS).player_count
                 if sonline == 0:
                     sonline = 1
+                    channel = bot.get_channel(chanID)
                     await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
-        except NoResponseError:
-            print(Fore.RED + await timenow(), 'No reply from A2S, retrying (60s)...' + Style.RESET_ALL)
+        except Exception as e:
             channel = bot.get_channel(chanID)
             await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
             if sonline == 1:
@@ -391,6 +443,7 @@ async def serveronline():
                 mycursor.execute(sql2)
                 mydb.commit()
                 mycursor.close()
+            print(Fore.RED + await timenow(), e, 'from A2S, retrying (60s)...' + Style.RESET_ALL)
         await asyncio.sleep(60)
 
 bot.loop.create_task(mainloop(file))
