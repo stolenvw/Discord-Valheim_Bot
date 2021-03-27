@@ -28,3 +28,6 @@ SQL_PORT = '3306'
 SQL_USER = 'username'
 SQL_PASS = 'password'
 SQL_DATABASE = 'database'
+
+# EXSERVERINFO - used to enable data extra server info gathering from logs ***Must add the extra server info table in mysql***
+EXSERVERINFO = False
