@@ -38,3 +38,17 @@ CREATE TABLE `events` (
 
 INSERT INTO `events` VALUES (1,'Skeletons','Skeleton Surprise','skeleton.png'),(2,'Blobs','..','Ooze.png'),(3,'Foresttrolls','The ground is shaking','troll.png'),(4,'Wolves','You are being hunted','wolf.png'),(5,'Surtlings','There\'s a smell of sulfur in the air','surtling.png');
 ```
+## Optional Table for Extra Server Info
+```
+CREATE TABLE `exstats` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `savezdos` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `savesec` varchar(10) DEFAULT NULL,
+  `serverversion` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `gameday` int DEFAULT NULL,
+  `timestamp` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `exstats` VALUES (1,'NULL',NULL,'NULL',NULL,1616448381);
+```
