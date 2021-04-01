@@ -33,10 +33,10 @@ CREATE TABLE `events` (
   `smessage` text NOT NULL,
   `image` text NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `type` (`type`(5))
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `type` (`type`(7)) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `events` VALUES (1,'Skeletons','Skeleton Surprise','skeleton.png'),(2,'Blobs','..','Ooze.png'),(3,'Foresttrolls','The ground is shaking','troll.png'),(4,'Wolves','You are being hunted','wolf.png'),(5,'Surtlings','There\'s a smell of sulfur in the air','surtling.png');
+INSERT INTO `events` VALUES (1,'Skeletons','Skeleton Surprise','skeleton.png'),(2,'Blobs','..','Ooze.png'),(3,'Foresttrolls','The ground is shaking','troll.png'),(4,'Wolves','You are being hunted','wolf.png'),(5,'Surtlings','There\'s a smell of sulfur in the air','surtling.png'),(6,'Eikthyrnir','Meadows','Eikthyr.png'),(7,'GDKing','Black Forest','The_Elder.png'),(8,'Bonemass','Swamp','Bonemass.png'),(9,'Dragonqueen','Mountain','Moder.png'),(10,'GoblinKing','Plains','Yagluth.png'),(11,'army_eikthyr','Eikthyr rallies the creatures of the forest','Boar.png'),(12,'army_theelder','The forest is moving...','Greydwarf.png'),(13,'army_bonemass','A foul smell from the swamp','Draugr.png'),(14,'army_moder','A cold wind blows from the mountains','Drake.png'),(15,'army_goblin','The horde is attacking','Fuling.png');
 ```
 ## Optional Table for Extra Server Info
 ```
@@ -44,11 +44,12 @@ CREATE TABLE `exstats` (
   `id` int NOT NULL AUTO_INCREMENT,
   `savezdos` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `savesec` varchar(10) DEFAULT NULL,
+  `worldsize` varchar(10) DEFAULT NULL,
   `serverversion` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `gameday` int DEFAULT NULL,
   `timestamp` bigint DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `exstats` VALUES (1,'NULL',NULL,'NULL',NULL,1616448381);
+INSERT INTO `exstats` VALUES (1,'NULL','NULL',NULL,'NULL',NULL,1616448381);
 ```
