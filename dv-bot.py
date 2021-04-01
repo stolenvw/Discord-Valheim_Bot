@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from colorama import Fore, Style, init
 from config import LOGCHAN_ID as lchanID
 from config import VCHANNEL_ID as chanID
+from config import BUGCHANNEL_ID as dbchanID
 from config import SQL_HOST as MYhost
 from config import SQL_PORT as MYport
 from config import SQL_USER as MYuser
@@ -32,15 +33,13 @@ ssaved2 = '.*? World saved \( ([0-9]+\.[0-9]+)ms \)$'
 sversion = '.*? Valheim version:([\.0-9]+)$'
 gdays = '.*? Time [\.0-9]+, day:([0-9]+)\s{1,}nextm:[\.0-9]+\s+skipspeed:[\.0-9]+$'
 
+
+bot = commands.Bot(command_prefix=config.BOT_PREFIX, help_command=None)
 server_name = config.SERVER_NAME
-bot = commands.Bot(command_prefix='!', help_command=None)
 sonline = 1
 
-    # maybe in the future for reformatting output of random mob events
-    # eventype = ['Skeletons', 'Blobs', 'Forest Trolls', 'Wolves', 'Surtlings']
-
-#Connect to MYSQL
-def mydbconnect():
+# Connect to MYSQL
+async def mydbconnect():
     global mydb
     mydb = mysql.connector.connect(
         host=MYhost,
@@ -49,21 +48,33 @@ def mydbconnect():
         database=MYbase,
         port=MYport,
         )
+    bugchan = bot.get_channel(dbchanID)
     try:
         if mydb.is_connected():
             db_Info = mydb.get_server_info()
-            print(Fore.GREEN + "Connected to MySQL database... MySQL Server version on ", db_Info + Style.RESET_ALL)
+            print(Fore.GREEN + "Connected to MySQL database... MySQL Server version ", db_Info + Style.RESET_ALL)
+            if config.USEDEBUGCHAN == True:
+                buginfo = discord.Embed(title=":white_check_mark: **INFO** :white_check_mark:", description="Connected to MySQL database... MySQL Server version " + db_Info, color=0x7EFF00)
+                buginfo.set_author(name=server_name)
+                await bugchan.send(embed=buginfo)
     except mysql.connector.Error as err:
         print(Fore.RED + err + Style.RESET_ALL)
+        if config.USEDEBUGCHAN == True:
+            bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description=err, color=0xFF001E)
+            bugerror.set_author(name=server_name)
+            await bugchan.send(embed=bugerror)
 
-mydbconnect()
-
-def get_cursor():
+async def get_cursor():
     try:
         mydb.ping(reconnect=True, attempts=3, delay=5)
     except mysql.connector.Error as err:
-        mydbconnect()
+        await mydbconnect()
         print(Fore.RED + "Connection to MySQL database went away... Reconnecting " + Style.RESET_ALL)
+        if config.USEDEBUGCHAN == True:
+            bugchan = bot.get_channel(dbchanID)
+            bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="Connection to MySQL database went away... Reconnecting", color=0xFF001E)
+            bugerror.set_author(name=server_name)
+            await bugchan.send(embed=bugerror)
     return mydb.cursor()
 
 def signal_handler(signal, frame):          # Method for catching SIGINT, cleaner output for restarting bot
@@ -73,19 +84,43 @@ signal.signal(signal.SIGINT, signal_handler)
 
 async def timenow():
     now = datetime.now()
-    gettime = now.strftime("%d/%m/%Y %H:%M:%S")
+    gettime = now.strftime("%m/%d/%Y %H:%M:%S")
     return gettime
 
-def convert(n):
+async def convert(n):
     return str(timedelta(seconds = n))
 
 @bot.event
 async def on_ready():
     print(Fore.GREEN + f'Bot connected as {bot.user} :)' + Style.RESET_ALL)
-    print('Log channel : %d' % (lchanID))
+    print('Command prefix: %s' % config.BOT_PREFIX)
+    print('Log channel: #%s' % (bot.get_channel(lchanID)))
     if config.USEVCSTATS == True:
         print('VoIP channel: %d' % (chanID))
-        bot.loop.create_task(serveronline())
+    if config.USEDEBUGCHAN == True:
+        print('Debug channel: #%s' % (bot.get_channel(dbchanID)))
+        bugchan = bot.get_channel(dbchanID)
+        buginfo = discord.Embed(title=":white_check_mark: **INFO** :white_check_mark:", color=0x7EFF00)
+        buginfo.set_author(name=server_name)
+        buginfo.add_field(name="Bot connected as:",
+                          value="{}".format(bot.user),
+                          inline=False)
+        buginfo.add_field(name="Command prefix:",
+                          value="{}".format(config.BOT_PREFIX),
+                          inline=False)
+        buginfo.add_field(name="Log channel:",
+                          value="#{}".format(bot.get_channel(lchanID)),
+                          inline=False)
+        if config.USEVCSTATS == True:
+            buginfo.add_field(name="VoIP channel:",
+                              value="#{}".format(chanID),
+                              inline=False)
+        buginfo.add_field(name="Debug channel",
+                          value="#{}".format(bot.get_channel(dbchanID)),
+                          inline=False)
+        await bugchan.send(embed=buginfo)
+    bot.loop.create_task(serveronline())
+    await mydbconnect()
 
 @bot.command(name='help')
 async def help_ctx(ctx):
@@ -97,10 +132,13 @@ async def help_ctx(ctx):
                         value="Shows a top 5 leaderboard of players with the most deaths. \n Example:`{}deaths 3` \n Available: 1-10 (*default: 10*)".format(bot.command_prefix),
                         inline=True)
     help_embed.add_field(name="{}playerstats <playername>".format(bot.command_prefix),
-                        value="Shows player stats on active monitored world. \n Example: '{}playerstats stolenvw'".format(bot.command_prefix),
+                        value="Shows player stats on active monitored world. \n Example: `{}playerstats bob`".format(bot.command_prefix),
                         inline=True)
     help_embed.add_field(name="{}active".format(bot.command_prefix),
-                        value="Shows who is currently logged into the server and how long they have been on for. \n Example: '{}active'".format(bot.command_prefix),
+                        value="Shows who is currently logged into the server and how long they have been on for. \n Example: `{}active`".format(bot.command_prefix),
+                        inline=True)
+    help_embed.add_field(name="{}version".format(bot.command_prefix),
+                        value="Shows current version of Valheim and Valheim Plus server is running. \n Example: `{}version`".format(bot.command_prefix),
                         inline=True)
     is_owner = await ctx.bot.is_owner(ctx.author)
     if is_owner:
@@ -110,13 +148,17 @@ async def help_ctx(ctx):
         help_embed.add_field(name="{}setstatus <type> <message>".format(bot.command_prefix),
                             value='Set status message of the bot. \n Example: `{}setstatus playing "Valheim"` \n Available type: playing, watching, listening'.format(bot.command_prefix),
                             inline=True)
+        if config.EXSERVERINFO == True:
+            help_embed.add_field(name="{}savestats".format(bot.command_prefix),
+                                value="Shows how many zods where saved and time it took to save them. \n Example: `{}savestats`".format(bot.command_prefix),
+                                inline=True)
     help_embed.set_footer(text="ckbaudio Valbot v0.42, stolenvw edit v0.51")
     await ctx.send(embed=help_embed)
 
 @bot.command(name="deaths")
 async def leaderboards(ctx, arg: typing.Optional[str] = '5'):
     ldrembed = discord.Embed(title=":skull_crossbones: __Death Leaderboards (top " + arg + ")__ :skull_crossbones:", color=0xFFC02C)
-    mycursor = get_cursor()
+    mycursor = await get_cursor()
     sql = """SELECT user, deaths FROM players WHERE deaths > 0 ORDER BY deaths DESC LIMIT %s""" % (arg)
     mycursor.execute(sql)
     Info = mycursor.fetchall()
@@ -164,7 +206,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
         description = 'Players online in the past ' + timedo + ':'
 
     #Get data from mysql
-    mycursor = get_cursor()
+    mycursor = await get_cursor()
     mycursor.close()
     sqls = """SELECT date, users FROM serverstats WHERE timestamp BETWEEN '%s' AND '%s'""" % (tlookup, int(time.time()))
     df = pd.read_sql(sqls, mydb, parse_dates=['date'])
@@ -194,8 +236,8 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     plt.tick_params(axis='both', which='both', bottom=False, left=False)
     plt.margins(x=0,y=0,tight=True)
     plt.tight_layout()
-    fig.savefig('temp.png', transparent=True, pad_inches=0) # Save and upload Plot
-    image = discord.File('temp.png', filename='temp.png')
+    fig.savefig('img/temp.png', transparent=True, pad_inches=0) # Save and upload Plot
+    image = discord.File('img/temp.png', filename='temp.png')
     plt.close()
     embed = discord.Embed(title=server_name, description=description, colour=12320855)
     embed.set_image(url='attachment://temp.png')
@@ -203,7 +245,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
 
 @bot.command(name="playerstats")
 async def playstats(ctx, arg):
-    mycursor = get_cursor()
+    mycursor = await get_cursor()
     sql = """SELECT user, deaths, startdate, playtime FROM players WHERE user = '%s'""" % (arg)
     mycursor.execute(sql)
     Info = mycursor.fetchall()
@@ -215,7 +257,7 @@ async def playstats(ctx, arg):
                            value='{}'.format(Info[2]),
                            inline=True)
         plsembed.add_field(name="Play Time:",
-                          value=convert(Info[3]),
+                          value=await convert(Info[3]),
                           inline=True)
         plsembed.add_field(name="Deaths:",
                           value=Info[1],
@@ -226,8 +268,8 @@ async def playstats(ctx, arg):
     mycursor.close()
 
 @bot.command(name="active")
-async def leaderboards(ctx):
-    mycursor = get_cursor()
+async def actives(ctx):
+    mycursor = await get_cursor()
     sql = """SELECT user, jointime FROM players WHERE ingame = 1 ORDER BY jointime LIMIT 10"""
     mycursor.execute(sql)
     Info = mycursor.fetchall()
@@ -240,11 +282,29 @@ async def leaderboards(ctx):
          for ind in Info:
              pname = ind[0]
              onfor = "Online For:"
-             ponline = convert(EndTime - ind[1])
+             ponline = await convert(EndTime - ind[1])
              ldrembed.add_field(name="{}".format(pname),
                                 value='{} {}'.format(onfor,ponline),
                                 inline=False)
          await ctx.send(embed=ldrembed)
+    mycursor.close()
+
+@bot.command(name="version")
+async def versions(ctx):
+    mycursor = await get_cursor()
+    sql = """SELECT serverversion FROM exstats WHERE id = 1"""
+    mycursor.execute(sql)
+    Info = mycursor.fetchall()
+    row_count = mycursor.rowcount
+    if row_count == 1:
+        Info=Info[0]
+        sembed = discord.Embed(title="Server Versions", color=0x407500)
+        sembed.add_field(name="Valheim:",
+                           value='{}'.format(Info[0]),
+                           inline=True)
+        await ctx.send(embed=sembed)
+    else:
+        await ctx.send(content=':no_entry_sign: Sorry no game version info found in the DB')
     mycursor.close()
 
 @bot.command(name="setstatus")
@@ -261,10 +321,44 @@ async def setstatus(ctx, arg: typing.Optional[str] = '0', arg1: typing.Optional[
       else:
            await ctx.channel.send('Usage: `{}setstatus <playing|watching|listening> "<Some activity>"`'.format(bot.command_prefix))
 
+@bot.command(name="savestats")
+@commands.is_owner()
+async def savestats(ctx):
+    if config.EXSERVERINFO == True:
+        mycursor = await get_cursor()
+        sql = """SELECT savezdos, savesec, worldsize, timestamp FROM exstats WHERE savesec is not null AND savezdos is not null ORDER BY timestamp DESC LIMIT 1"""
+        mycursor.execute(sql)
+        Info = mycursor.fetchall()
+        row_count = mycursor.rowcount
+        if row_count == 1:
+            Info=Info[0]
+            sembed = discord.Embed(title="World File Save Stats", color=0x407500, timestamp=datetime.utcfromtimestamp(Info[3]))
+            sembed.set_footer(text="Last saved")
+            sembed.add_field(name="Zdos Saved:",
+                           value='{}'.format(Info[0]),
+                           inline=True)
+            sembed.add_field(name="Saving Took:",
+                          value='{}ms'.format(Info[1]),
+                          inline=True)
+            if config.WORLDSIZE == True:
+                sembed.add_field(name="World Size:",
+                              value='{}MB'.format(Info[2]),
+                              inline=True)
+            await ctx.send(embed=sembed)
+        else:
+            await ctx.send(content=':no_entry_sign: No World File Save Stats Found')
+        mycursor.close()
+    else:
+        await ctx.send(content=':no_entry_sign: Extra Server Info is turned off, turn on to see save stats')
 async def mainloop(file):
     await bot.wait_until_ready()
     lchannel = bot.get_channel(lchanID)
+    bugchan = bot.get_channel(dbchanID)
     print('Main loop: init')
+    if config.USEDEBUGCHAN == True:
+        buginfo = discord.Embed(title=":white_check_mark: **INFO** :white_check_mark:", description="Main Loop Started", color=0x7EFF00)
+        buginfo.set_author(name=server_name)
+        await bugchan.send(embed=buginfo)
     try:
         testfile = open(file)
         testfile.close()
@@ -275,7 +369,7 @@ async def mainloop(file):
                     line = f.readline()
                     if(re.search(pdeath, line)):
                         pname = re.search(pdeath, line).group(1)
-                        mycursor = get_cursor()
+                        mycursor = await get_cursor()
                         sql = """UPDATE players SET deaths = deaths + 1 WHERE user = '%s'""" % (pname)
                         mycursor.execute(sql)
                         mydb.commit()
@@ -283,7 +377,7 @@ async def mainloop(file):
                         await lchannel.send(':skull: **' + pname + '** just died!')
                     if(re.search(pevent, line)):
                         eventID = re.search(pevent, line).group(1)
-                        mycursor = get_cursor()
+                        mycursor = await get_cursor()
                         sql = """SELECT type, smessage, image FROM events WHERE type = '%s' LIMIT 1""" % (eventID)
                         mycursor.execute(sql)
                         Info = mycursor.fetchall()
@@ -297,14 +391,13 @@ async def mainloop(file):
                     if(re.search(pjoin, line)):
                         logJoin = re.search(pjoin, line).group(1)
                         logID = re.search(pjoin, line).group(2)
-                        tnow = datetime.now()
-                        mycursor = get_cursor()
+                        mycursor = await get_cursor()
                         sql = """SELECT id, ingame FROM players WHERE user = '%s'""" % (logJoin)
                         mycursor.execute(sql)
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 0:
-                           StartDate = tnow.strftime("%m/%d/%Y %H:%M:%S")
+                           StartDate = await timenow()
                            JoinTime = int(time.time())
                            InGame = 1
                            sql = """INSERT INTO players (user, valid, startdate, jointime, ingame) VALUES ('%s', '%s', '%s', '%s', '%s')""" % (logJoin, logID, StartDate, JoinTime, InGame)
@@ -324,14 +417,13 @@ async def mainloop(file):
                                 mycursor.execute(sql)
                                 mydb.commit()
                                 await lchannel.send(':airplane_arriving: **' + logJoin + '** has joined the party!')
-                        sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), await serverstatsupdate())
+                        sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (await timenow(), int(time.time()), await serverstatsupdate())
                         mycursor.execute(sql2)
                         mydb.commit()
                         mycursor.close()
                     if(re.search(pquit, line)):
                         logquit = re.search(pquit, line).group(1)
-                        tnow = datetime.now()
-                        mycursor = get_cursor()
+                        mycursor = await get_cursor()
                         sql = """SELECT id, user, jointime, playtime FROM players WHERE valid = '%s'""" % (logquit)
                         mycursor.execute(sql)
                         Info = mycursor.fetchall()
@@ -340,52 +432,73 @@ async def mainloop(file):
                            Info=Info[0]
                            EndTime = int(time.time())
                            Ptime = EndTime - Info[2] + Info[3]
-                           ponline = convert(EndTime - Info[2])
+                           ponline = await convert(EndTime - Info[2])
                            InGame = 0
                            sql = """UPDATE players SET playtime = '%s', ingame = '%s' WHERE id = '%s'""" % (Ptime, InGame, Info[0])
                            mycursor.execute(sql)
                            mydb.commit()
                            await lchannel.send(':airplane_departure: **' + Info[1] + '** has left the party! Online for: ' + ponline + '')
-                           sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), await serverstatsupdate())
+                           sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (await timenow(), int(time.time()), await serverstatsupdate())
                            mycursor.execute(sql2)
                            mydb.commit()
                         mycursor.close()
                     if(re.search(pfind, line)):
                         newitem = re.search(pfind, line).group(1)
-                        await lchannel.send(':crossed_swords: Found location of **' + newitem + '**')
+                        mycursor = await get_cursor()
+                        sql = """SELECT type, smessage, image FROM events WHERE type = '%s' LIMIT 1""" % (newitem)
+                        mycursor.execute(sql)
+                        Info = mycursor.fetchall()
+                        Info=Info[0]
+                        image = discord.File('img/' + Info[2], filename=Info[2])
+                        embed = discord.Embed(title=Info[0], colour=discord.Colour(0x77ac18))
+                        embed.set_thumbnail(url='attachment://' + Info[2])
+                        embed.set_author(name="📢 Location Found")
+                        await lchannel.send(file=image, embed=embed)
+                        mycursor.close()
                     if config.EXSERVERINFO == True:
                         if(re.search(ssaved1, line)):
                             save1 = re.search(ssaved1, line).group(1)
-                            mycursor = get_cursor()
+                            mycursor = await get_cursor()
                             sql = """INSERT INTO exstats (savezdos, timestamp) VALUES ('%s', '%s')""" % (save1, int(time.time()))
                             mycursor.execute(sql)
                             mydb.commit()
                             mycursor.close()
                         if(re.search(ssaved2, line)):
                             save2 = re.search(ssaved2, line).group(1)
-                            mycursor = get_cursor()
-                            tlookup = int(time.time()) - 120
+                            mycursor = await get_cursor()
+                            tlookup = int(time.time()) - 60
                             sql = """SELECT id FROM exstats WHERE savesec is null AND timestamp BETWEEN '%s' AND '%s' LIMIT 1""" % (tlookup, int(time.time()))
                             mycursor.execute(sql)
                             Info = mycursor.fetchall()
                             row_count = mycursor.rowcount
                             if row_count == 1:
                                 Info=Info[0]
-                                sql = """UPDATE exstats SET savesec = '%s' WHERE id = '%s'""" % (save2, Info[0])
+                                if config.WORLDSIZE == True:
+                                    sql ="""UPDATE exstats SET savesec = '%s', worldsize = '%s' WHERE id = '%s'""" % (save2, '{:,.2f}'.format(os.path.getsize(config.worldfile)/float(1<<20)), Info[0])
+                                else:
+                                    sql = """UPDATE exstats SET savesec = '%s' WHERE id = '%s'""" % (save2, Info[0])
                                 mycursor.execute(sql)
                                 mydb.commit()
                             else:
                                 print('ERROR: Could not find save zdos info')
+                                if config.USEDEBUGCHAN == True:
+                                    bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="Could not find save zdos info", color=0xFF001E)
+                                    bugerror.set_author(name=server_name)
+                                    await bugchan.send(embed=bugerror)
                             mycursor.close()
                         if(re.search(sversion, line)):
                             serversion = re.search(sversion, line).group(1)
-                            mycursor = get_cursor()
+                            mycursor = await get_cursor()
                             sql = """SELECT id, serverversion FROM exstats WHERE id = 1"""
                             mycursor.execute(sql)
                             Info = mycursor.fetchall()
                             row_count = mycursor.rowcount
                             if row_count == 0:
-                                await lchannel.send('**ERROR:** Extra server info is set, but missing database table/info')
+                                print(Fore.RED + 'ERROR: Extra server info is set, but missing database table/info' + Style.RESET_ALL)
+                                if config.USEDEBUGCHAN == True:
+                                    bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="Extra server info is set, but missing database table/info", color=0xFF001E)
+                                    bugerror.set_author(name=server_name)
+                                    await bugchan.send(embed=bugerror)
                             else:
                                 Info=Info[0]
                                 if serversion != Info[1]:
@@ -396,7 +509,7 @@ async def mainloop(file):
                             mycursor.close()
                         if(re.search(gdays, line)):
                             gamedays = re.search(gdays, line).group(1)
-                            mycursor = get_cursor()
+                            mycursor = await get_cursor()
                             sql = """INSERT INTO exstats (gameday, timestamp) VALUES ('%s', '%s')""" % (gamedays, int(time.time()))
                             mycursor.execute(sql)
                             mydb.commit()
@@ -406,18 +519,24 @@ async def mainloop(file):
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
         print('To generate server logs, run server with -logfile launch flag')
+        if config.USEDEBUGCHAN == True:
+            bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="No valid log found, event reports disabled. Please check config.py \n To generate server logs, run server with -logfile launch flag", color=0xFF001E)
+            bugerror.set_author(name=server_name)
+            await bugchan.send(embed=bugerror)
 
 async def serverstatsupdate():
     try:
         if a2s.info(config.SERVER_ADDRESS):
             channel = bot.get_channel(chanID)
             oplayers = a2s.info(config.SERVER_ADDRESS).player_count
-            await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {oplayers}" +" / 10")
+            if config.USEVCSTATS == True:
+                await channel.edit(name=f"{emoji.emojize(':house:')} In-Game: {oplayers}" +" / 10")
     except Exception as e:
         print(Fore.RED + await timenow(), e, 'from A2S' + Style.RESET_ALL)
         channel = bot.get_channel(chanID)
         oplayers = 0
-        await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
+        if config.USEVCSTATS == True:
+            await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
     else:
         return oplayers
 
@@ -430,20 +549,26 @@ async def serveronline():
                 meonline = a2s.info(config.SERVER_ADDRESS).player_count
                 if sonline == 0:
                     sonline = 1
-                    channel = bot.get_channel(chanID)
-                    await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
+                    if config.USEVCSTATS == True:
+                        channel = bot.get_channel(chanID)
+                        await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
         except Exception as e:
-            channel = bot.get_channel(chanID)
-            await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
+            if config.USEVCSTATS == True:
+                channel = bot.get_channel(chanID)
+                await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
             if sonline == 1:
                 sonline = 0
-                tnow = datetime.now()
-                mycursor = get_cursor()
-                sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (tnow.strftime("%m/%d/%Y %H:%M:%S"), int(time.time()), sonline)
+                mycursor = await get_cursor()
+                sql2 = """INSERT INTO serverstats (date, timestamp, users) VALUES ('%s', '%s', '%s')""" % (await timenow(), int(time.time()), sonline)
                 mycursor.execute(sql2)
                 mydb.commit()
                 mycursor.close()
             print(Fore.RED + await timenow(), e, 'from A2S, retrying (60s)...' + Style.RESET_ALL)
+            if config.USEDEBUGCHAN == True:
+                bugchan = bot.get_channel(dbchanID)
+                bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description=e, color=0xFF001E)
+                bugerror.set_author(name=server_name)
+                await bugchan.send(embed=bugerror)
         await asyncio.sleep(60)
 
 bot.loop.create_task(mainloop(file))
