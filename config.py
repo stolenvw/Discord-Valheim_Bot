@@ -7,6 +7,9 @@ file = '/var/log/valheim.log'
 
 BOT_TOKEN = ""
 
+# Change ? to command prefix you want to use
+BOT_PREFIX = "!"
+
 # Make sure are seen between server and script host
 SERVER_ADDRESS = ("0.0.0.0",2457)
 
@@ -29,5 +32,15 @@ SQL_USER = 'username'
 SQL_PASS = 'password'
 SQL_DATABASE = 'database'
 
-# EXSERVERINFO - used to enable data extra server info gathering from logs ***Must add the extra server info table in mysql***
-EXSERVERINFO = False
+# EXSERVERINFO - used to enable extra server data info gathering from logs ***Must add the extra server info table in mysql***
+EXSERVERINFO = True
+
+# World file location used for showing file size.
+WORLDSIZE = True
+worldfile = '/home/user/valheim/.config/unity3d/IronGate/Valheim/worlds/world.db.old'
+
+# Enable sending debug info to a channel
+USEDEBUGCHAN = True
+
+# BUGCHANNEL - where the bot shows debug info
+BUGCHANNEL_ID = 7293481670000121
