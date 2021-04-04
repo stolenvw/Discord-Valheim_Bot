@@ -58,9 +58,9 @@ async def mydbconnect():
                 buginfo.set_author(name=server_name)
                 await bugchan.send(embed=buginfo)
     except mysql.connector.Error as err:
-        print(Fore.RED + err + Style.RESET_ALL)
+        print(Fore.RED + err + 'From MySQL database' + Style.RESET_ALL)
         if config.USEDEBUGCHAN == True:
-            bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description=err, color=0xFF001E)
+            bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="{} From MySQL database".format(err), color=0xFF001E)
             bugerror.set_author(name=server_name)
             await bugchan.send(embed=bugerror)
 
@@ -566,7 +566,7 @@ async def serveronline():
             print(Fore.RED + await timenow(), e, 'from A2S, retrying (60s)...' + Style.RESET_ALL)
             if config.USEDEBUGCHAN == True:
                 bugchan = bot.get_channel(dbchanID)
-                bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description=e, color=0xFF001E)
+                bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description="{} from A2S, retrying (60s)...".format(e), color=0xFF001E)
                 bugerror.set_author(name=server_name)
                 await bugchan.send(embed=bugerror)
         await asyncio.sleep(60)
