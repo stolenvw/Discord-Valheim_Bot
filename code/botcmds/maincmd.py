@@ -232,7 +232,7 @@ class Main(commands.Cog):
 
     @commands.command(name="version",
                       brief="Server Versions",
-                      help="Shows current version of Valheim and Valheim Plus server is running.",
+                      help="Shows current version of Valheim server is running.",
                       )
     @commands.has_any_role(config.VERSIONS_CMD)
     @commands.check(chancheck)
