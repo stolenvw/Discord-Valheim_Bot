@@ -54,3 +54,7 @@ ACTIVE_CMD = "@everyone"
 VERSIONS_CMD = "@everyone"
 SETSTATUS_CMD = "Admin"
 SAVESTATS_CMD = "Admin","Mod"
+PLOC_CMD = "@everyone"
+
+# PLOCINFO - used for tracking placed locations to determine percent of world exploed. Will not show right on an existing world ***Must rerun dbsetup.py if changing this to True if you ran it all ready***
+PLOCINFO = True

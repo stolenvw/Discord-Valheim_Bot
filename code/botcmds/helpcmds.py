@@ -45,11 +45,11 @@ class Help(commands.Cog):
         if ctx.channel.id == config.LOGCHAN_ID or commands.is_owner():
             return True
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.check(chancheck)
     # @commands.bot_has_permissions(add_reactions=True,embed_links=True)
     async def help(self, ctx, *input):
-        """Shows all modules of that bot"""
+        """Shows all modules of the bot"""
 
 	    # !SET THOSE VARIABLES TO MAKE THE COG FUNCTIONAL!
         prefix = config.BOT_PREFIX

@@ -31,6 +31,17 @@ if config.EXSERVERINFO:
         "  PRIMARY KEY (`id`)"
         ") ENGINE=InnoDB")
 
+
+if config.PLOCINFO:
+    TABLES['plocinfo'] = (
+        "CREATE TABLE `plocinfo` ("
+        "  `id` int NOT NULL AUTO_INCREMENT,"
+        "  `locations` varchar(10) DEFAULT NULL,"
+        "  `zone` varchar(10) DEFAULT NULL,"
+        "  `duration` varchar(10) DEFAULT NULL,"
+        "  PRIMARY KEY (`id`)"
+        ") ENGINE=InnoDB")
+
 TABLES['players'] = (
     "CREATE TABLE `players` ("
     "  `id` int NOT NULL AUTO_INCREMENT,"
