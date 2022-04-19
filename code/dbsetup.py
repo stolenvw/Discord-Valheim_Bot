@@ -111,7 +111,7 @@ def eventinsert():
     sql = """INSERT INTO `events` (`id`, `type`, `smessage`, `image`) VALUES (%s, %s, %s, %s)"""
     val = [
         (1, 'Skeletons', 'Skeleton Surprise', 'skeleton.png'),
-        (2, 'Blobs', '..', 'Ooze.png'),
+        (2, 'Blobs', 'A foul smell from the swamp', 'Ooze.png'),
         (3, 'Foresttrolls', 'The ground is shaking', 'troll.png'),
         (4, 'Wolves', 'You are being hunted', 'wolf.png'),
         (5, 'Surtlings', 'There\'s a smell of sulfur in the air', 'surtling.png'),
@@ -124,7 +124,8 @@ def eventinsert():
         (12, 'army_theelder', 'The forest is moving...', 'Greydwarf.png'),
         (13, 'army_bonemass', 'A foul smell from the swamp', 'Draugr.png'),
         (14, 'army_moder', 'A cold wind blows from the mountains', 'Drake.png'),
-        (15, 'army_goblin', 'The horde is attacking', 'Fuling.png')
+        (15, 'army_goblin', 'The horde is attacking', 'Fuling.png'),
+        (16, 'Bats', 'You stirred the cauldron', 'Bat.png')
     ]
     mycursor1.executemany(sql, val)
     mydb.commit()

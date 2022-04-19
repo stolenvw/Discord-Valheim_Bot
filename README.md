@@ -18,6 +18,9 @@ Tables and data for the MySQL database.
 **Warning: Set up the config.py before running this**  
 Run `python3 dbsetup.py` from the code dir to create tables.
 
+## [eventsdbupdate.py](dbupdates/eventsdbupdate.py)
+Move to the code dir and run `python3 eventsdbupdate.py` to update the events database with new events.
+
 ## Usage:
 `python3 valheimbot.py` While in the `code` dir.  
 `nohup python3 valheimbot.py &` Too run in background.  
