@@ -179,12 +179,20 @@ async def mainloop(file):
                             sql = """SELECT type, smessage, image FROM events WHERE type = '%s' LIMIT 1""" % (eventID)
                             mycursor.execute(sql)
                             Info = mycursor.fetchall()
-                            Info=Info[0]
-                            image = discord.File('img/' + Info[2], filename=Info[2])
-                            embed = discord.Embed(title=Info[0], colour=discord.Colour(0xb6000e), description="*" + Info[1] + "*")
-                            embed.set_thumbnail(url='attachment://' + Info[2])
-                            embed.set_author(name="📢 Random Mob Event")
-                            await lchannel.send(file=image, embed=embed)
+                            row_count = mycursor.rowcount
+                            if row_count == 0:
+                               print(Fore.RED + 'ERROR: Event' + eventID + ' missing from database' + Style.RESET_ALL)
+                               if config.USEDEBUGCHAN == True:
+                                bugerror = discord.Embed(title=":sos: **ERROR** :sos:", description='Event {} missing from database'.format(eventID), color=0xFF001E)
+                                bugerror.set_author(name=server_name)
+                                await bugchan.send(embed=bugerror)
+                            else:
+                              Info=Info[0]
+                              image = discord.File('img/' + Info[2], filename=Info[2])
+                              embed = discord.Embed(title=Info[0], colour=discord.Colour(0xb6000e), description="*" + Info[1] + "*")
+                              embed.set_thumbnail(url='attachment://' + Info[2])
+                              embed.set_author(name="📢 Random Mob Event")
+                              await lchannel.send(file=image, embed=embed)
                             mycursor.close()
                     # Announcing when a player joins the server, Announcing if they are a new player on the server, adds player to db if new, updates db with login time
                         if(re.search(pjoin, line)):
