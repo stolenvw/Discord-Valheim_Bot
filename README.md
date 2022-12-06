@@ -1,6 +1,14 @@
 # Valheim-Discord_Bot
 Valheim discord bot originally based off of [ckbaudio's valheim-discord-bot](https://github.com/ckbaudio/valheim-discord-bot) with a lot of changes.
 
+## UPDATE 12/6/2022:
+New version will be coming out sometime this week.  
+*discord.py updated to version 2.1.0*  
+*Bot now uses slash commands, instead of !prefix*  
+*Updated for crossplay and Mistlands*  
+*Bot logging to logfile, USEDEBUGCHAN setting outputs stuff from the logfile to BUGCHANNEL_ID*  
+*Other dependencies also updated to newest version*
+
 ## Setup:
 **Working MySQL server is needed for this bot.**  
 `pip install -r requirements.txt` To install Pyhton requirements.
