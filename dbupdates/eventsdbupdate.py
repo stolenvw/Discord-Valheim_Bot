@@ -1,6 +1,5 @@
-import os, re, config, sys, mysql.connector
-from colorama import Fore, Style, init
-from mysql.connector import errorcode
+import mysql.connector
+from colorama import Fore, Style
 from config import SQL_HOST as MYhost
 from config import SQL_PORT as MYport
 from config import SQL_USER as MYuser

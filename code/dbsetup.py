@@ -1,5 +1,6 @@
-import os, re, config, sys, mysql.connector
-from colorama import Fore, Style, init
+import config
+import mysql.connector
+from colorama import Fore, Style
 from mysql.connector import errorcode
 from config import SQL_HOST as MYhost
 from config import SQL_PORT as MYport
@@ -62,6 +63,7 @@ TABLES['serverstats'] = (
     "  `date` varchar(20) DEFAULT NULL,"
     "  `timestamp` bigint DEFAULT NULL,"
     "  `users` int NOT NULL DEFAULT '0',"
+    "  `jocode` int DEFAULT NULL,"
     "  PRIMARY KEY (`id`) USING BTREE,"
     "  UNIQUE KEY `timestamp` (`timestamp`)"
     ") ENGINE=InnoDB")
@@ -125,7 +127,9 @@ def eventinsert():
         (13, 'army_bonemass', 'A foul smell from the swamp', 'Draugr.png'),
         (14, 'army_moder', 'A cold wind blows from the mountains', 'Drake.png'),
         (15, 'army_goblin', 'The horde is attacking', 'Fuling.png'),
-        (16, 'Bats', 'You stirred the cauldron', 'Bat.png')
+        (16, 'Bats', 'You stirred the cauldron', 'Bat.png'),
+        (17, 'army_seekers', 'They Sought You Out', 'seekers.png'),
+        (18, 'Gjall', 'What\'s up gjall?', 'gjall.png')
     ]
     mycursor1.executemany(sql, val)
     mydb.commit()
