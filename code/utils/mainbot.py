@@ -498,6 +498,46 @@ class MainBot(commands.Cog):
         await self.bot.wait_until_ready()
         logger.info("Server online loop started")
 
+    @tasks.loop(minutes=30)
+    async def versioncheck(self):
+        lchannel = self.bot.get_channel(lchanID)
+        try:
+            serversion = a2s.info(config.SERVER_ADDRESS).keywords
+            botsql = self.bot.get_cog("BotSQL")
+            mycursor = await botsql.get_cursor()
+            sql = (
+                """SELECT id, serverversion FROM exstats WHERE id = 1"""
+            )
+            mycursor.execute(sql)
+            Info = mycursor.fetchall()
+            row_count = mycursor.rowcount
+            if row_count == 0:
+                logger.error(
+                    "Extra server info is set, but missing database table/info"
+                )
+            else:
+                Info = Info[0]
+                if serversion != Info[1]:
+                    sql = (
+                        """UPDATE exstats SET serverversion = '%s' WHERE id = '%s'"""
+                        % (serversion, Info[0])
+                    )
+                    mycursor.execute(sql)
+                    await botsql.botmydb()
+                    await lchannel.send(
+                        "**INFO:** Server has been updated to version: "
+                        + serversion
+                        + ""
+                    )
+            mycursor.close()
+        except Exception:
+            logger.exception(f"Failed to get version info from server, trying again in 30 minutes.")
+
+    @versioncheck.before_loop
+    async def before_versioncheck(self):
+        await self.bot.wait_until_ready()
+        logger.info("Server verion check loop started")
+
 
 async def setup(bot):
     await bot.add_cog(MainBot(bot))

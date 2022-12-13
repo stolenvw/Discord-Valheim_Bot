@@ -2,7 +2,7 @@ import os
 import discord
 import signal
 import logging
-from config import file, BOT_PREFIX, LOG_LEVEL, BOT_TOKEN, USEDEBUGCHAN, DISCORD_SERVER, LOG_FILE
+from config import file, BOT_PREFIX, LOG_LEVEL, BOT_TOKEN, USEDEBUGCHAN, DISCORD_SERVER, LOG_FILE, EXSERVERINFO
 from discord.ext import commands
 from logging.handlers import TimedRotatingFileHandler
 
@@ -69,6 +69,8 @@ class MyBot(commands.Bot):
             bugcog = bot.get_cog("DebugBot")
             if not bugcog.debugloop.is_running():
                 bugcog.debugloop.start()
+        if EXSERVERINFO:
+            maincog.versioncheck.start()
         self.tree.copy_global_to(guild=discord.Object(id=DISCORD_SERVER))
         await self.tree.sync(guild=discord.Object(id=DISCORD_SERVER))
         logger.info(f"Synced slash commands for {self.user}")
