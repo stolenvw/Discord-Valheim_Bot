@@ -51,11 +51,7 @@ class Main(commands.Cog):
     @app_commands.check(chancheck)
     async def leaderboards(self, interaction: discord.Integration, arg: Optional[int] = 5):
         ldrembed = discord.Embed(
-            title=":skull_crossbones: __Death Leaderboards (top "
-            + arg
-            + ")__ :skull_crossbones:",
-            color=0xFFC02C,
-        )
+            title=f":skull_crossbones: __Death Leaderboards (top {arg})__ :skull_crossbones:", color=0xFFC02C)
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
         sql = (

@@ -62,8 +62,14 @@ class Explored(commands.Cog):
         mycursor.execute(sql1)
         Info1 = mycursor.fetchall()
         mycursor.close()
-        Info = Info[0]
-        Info1 = Info1[0]
+        try:
+            Info = Info[0]
+        except IndexError:
+            logger.error("No locations found in the database, go explore some aera's")
+        try:
+            Info1 = Info1[0]
+        except IndexError:
+            logger.error("Did not find total locations in the database, Please restart server with bot running.")
         ldrembed.add_field(
             name="Total Locations", value="{}".format(Info1[0]), inline=True
         )
