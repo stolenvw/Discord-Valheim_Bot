@@ -11,11 +11,11 @@ from datetime import datetime, timedelta
 from config import LOGCHAN_ID as lchanID
 from config import VCHANNEL_ID as chanID
 
-pdeath = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Got character ZDOID from (\w+) : 0:0"
+pdeath = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Got character ZDOID from ([\w ]+) : 0:0"
 pevent = (
     "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Random event set:(\w+)"
 )
-pjoin = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Got character ZDOID from (\w+) : ([-0-9]*:[-0-9]*)$"
+pjoin = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Got character ZDOID from ([\w ]+) : ([-0-9]*:[-0-9]*)$"
 pquit = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Destroying abandoned non persistent zdo ([-0-9]*:[0-9]*) owner [-0-9]*$"
 pfind = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Found location of type (\w+)"
 ssaved1 = (
