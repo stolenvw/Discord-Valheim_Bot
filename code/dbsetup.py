@@ -129,7 +129,8 @@ def eventinsert():
         (15, 'army_goblin', 'The horde is attacking', 'Fuling.png'),
         (16, 'Bats', 'You stirred the cauldron', 'Bat.png'),
         (17, 'army_seekers', 'They Sought You Out', 'seekers.png'),
-        (18, 'Gjall', 'What\'s up gjall?', 'gjall.png')
+        (18, 'Gjall', 'What\'s up gjall?', 'gjall.png'),
+        (19, 'Mistlands_DvergrBossEntrance1', 'Mistlands', 'thequeen.png')
     ]
     mycursor1.executemany(sql, val)
     mydb.commit()

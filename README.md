@@ -35,6 +35,9 @@ Run `python3 dbsetup.py` from the code dir to create tables.
 ## [eventsdbupdate.py](dbupdates/eventsdbupdate.py)
 Move to the code dir and run `python3 eventsdbupdate.py` to update the events database with new events.
 
+## [mistlandsbossdb.py](dbupdates/mistlandsbossdb.py) 12/15/2022
+Move to the code dir and run `python3 mistlandsbossdb.py` to update the events database with location found announcement info for mistlands boss.
+
 ## Usage:
 `python3 valheimbot.py` While in the `code` dir.  
 `nohup python3 valheimbot.py &` Too run in background.  
