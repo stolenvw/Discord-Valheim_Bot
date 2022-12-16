@@ -54,7 +54,8 @@ def addseekers():
         sql = """INSERT INTO `events` (`id`, `type`, `smessage`, `image`) VALUES (%s, %s, %s, %s)"""
         val = [
             (17, 'army_seekers', 'They Sought You Out', 'seekers.png'),
-            (18, 'Gjall', 'What\'s up gjall?', 'gjall.png')
+            (18, 'Gjall', 'What\'s up gjall?', 'gjall.png'),
+            (19, 'Mistlands_DvergrBossEntrance1', 'Mistlands', 'thequeen.png')
         ]
         mycursor.executemany(sql, val)
         mydb.commit()
