@@ -32,18 +32,18 @@ Tables and data for the MySQL database.
 **Warning: Set up the config.py before running this**  
 Run `python3 dbsetup.py` from the code dir to create tables.
 
-## [eventsdbupdate.py](dbupdates/eventsdbupdate.py)
-Move to the code dir and run `python3 eventsdbupdate.py` to update the events database with bat event. Only needs to be ran once if updating from older version.
-
-## [mistlandsbossdb.py](dbupdates/mistlandsbossdb.py) 12/15/2022
-Move to the code dir and run `python3 mistlandsbossdb.py` to update the events database with location found announcement info for mistlands boss. Only needs to be ran once if updating from older version
-
 ## Usage:
 `python3 valheimbot.py` While in the `code` dir.  
 `nohup python3 valheimbot.py &` Too run in background.  
 Or you can create a service to run `valheimbot.py` under systemd  
 
-**help** Shows available commands
+## Updating from older version:
+
+## [eventsdbupdate.py](dbupdates/eventsdbupdate.py)
+Move to the code dir and run `python3 eventsdbupdate.py` to update the events database with bat event. Only needs to be ran once if updating from older version.
+
+## [mistlandsbossdb.py](dbupdates/mistlandsbossdb.py) 12/15/2022
+Move to the code dir and run `python3 mistlandsbossdb.py` to update the events database with location found announcement info for mistlands boss. Only needs to be ran once if updating from older version
 
 ### Example Output:
 ![](example/example.png)
