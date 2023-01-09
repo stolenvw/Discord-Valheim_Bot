@@ -24,7 +24,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+dislog = logging.getLogger('discord')
 logger.setLevel(LOG_LEVEL)
+dislog.setLevel('INFO')
 
 
 def signal_handler(signal, frame):
@@ -78,4 +80,4 @@ class MyBot(commands.Bot):
 
 if __name__ == "__main__":
     bot = MyBot(command_prefix=BOT_PREFIX, intents=intents)
-    bot.run(BOT_TOKEN)
+    bot.run(BOT_TOKEN, log_handler=None)
