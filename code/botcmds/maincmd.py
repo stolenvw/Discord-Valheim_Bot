@@ -176,7 +176,7 @@ class Main(commands.Cog):
     @app_commands.command(name="setstatus", description="Set status message of the bot.")
     @app_commands.rename(arg="activity")
     @app_commands.rename(arg1="message")
-    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.checks.has_any_role(config.SETSTATUS_CMD)
     async def _setstatus(
         self,
         interaction: discord.Integration,
