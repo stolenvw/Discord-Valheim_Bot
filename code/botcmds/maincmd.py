@@ -240,7 +240,7 @@ class Main(commands.Cog):
                 ":no_entry_sign: Extra Server Info is turned off, turn on to see save stats", ephemeral=True
             )
 
-    @app_commands.command(name="joincode", description="Shows join code for the server")
+    @app_commands.command(name="joincode", description="Shows join code for the server. (For servers using crossplay)")
     @app_commands.checks.has_any_role(config.JOINCODE_CMD)
     @app_commands.check(chancheck)
     async def _joincode(self, interaction: discord.Integration):
