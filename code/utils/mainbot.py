@@ -40,6 +40,7 @@ class MainBot(commands.Cog):
         self.sonline = True
         self.last_pos = False
         self.crossplay = False
+        self.voipchan = False
 
     # Main loop for reading log file and outputing events
     @tasks.loop(seconds=2)
@@ -410,7 +411,7 @@ class MainBot(commands.Cog):
                                 )
                                 mycursor.execute(sql2)
                                 await botsql.botmydb()
-                                if config.USEVCSTATS == True:
+                                if config.USEVCSTATS and self.voipchan != None:
                                     channel = self.bot.get_channel(chanID)
                                     await channel.edit(
                                         name=f"{emoji.emojize(':house:')} In-Game: {oplayers} / 10"
@@ -430,6 +431,8 @@ class MainBot(commands.Cog):
         logger.info(f"Log channel: #{self.bot.get_channel(lchanID)}")
         if config.USEVCSTATS == True:
             logger.info(f"VoIP channel: {self.bot.get_channel(chanID)}")
+            if self.bot.get_channel(chanID) == None:
+                logger.warn("USEVCSTATS is set to True, but VCHANNEL_ID returns no channel.")
         await self.bot.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="Stolenvw ValheimBot"
@@ -448,17 +451,17 @@ class MainBot(commands.Cog):
     async def serverstatsupdate(self):
         try:
             if a2s.info(config.SERVER_ADDRESS):
-                channel = self.bot.get_channel(chanID)
                 oplayers = a2s.info(config.SERVER_ADDRESS).player_count
-                if config.USEVCSTATS == True:
+                if config.USEVCSTATS and self.voipchan != None:
+                    channel = self.bot.get_channel(chanID)
                     await channel.edit(
                         name=f"{emoji.emojize(':house:')} In-Game: {oplayers} / 10"
                     )
         except Exception:
             logger.exception(f"Error from A2S")
-            channel = self.bot.get_channel(chanID)
             oplayers = 0
-            if config.USEVCSTATS == True:
+            if config.USEVCSTATS and self.voipchan != None:
+                channel = self.bot.get_channel(chanID)
                 await channel.edit(
                     name=f"{emoji.emojize(':cross_mark:')} Server Offline"
                 )
@@ -470,12 +473,12 @@ class MainBot(commands.Cog):
         try:
             if a2s.info(config.SERVER_ADDRESS) and not self.sonline:
                 self.sonline = True
-                if config.USEVCSTATS:
+                if config.USEVCSTATS and self.voipchan != None:
                     channel = self.bot.get_channel(chanID)
                     await channel.edit(name=f"{emoji.emojize(':house:')} Server OnLine")
                 logger.info("Server online")
         except Exception as e:
-            if config.USEVCSTATS:
+            if config.USEVCSTATS and self.voipchan != None:
                 channel = self.bot.get_channel(chanID)
                 await channel.edit(
                     name=f"{emoji.emojize(':cross_mark:')} Server Offline"
@@ -496,6 +499,7 @@ class MainBot(commands.Cog):
     @serveronline.before_loop
     async def before_serveronline(self):
         await self.bot.wait_until_ready()
+        self.voipchan = self.bot.get_channel(chanID)
         logger.info("Server online loop started")
 
     @tasks.loop(minutes=30)
