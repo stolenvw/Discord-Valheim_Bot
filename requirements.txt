@@ -1,5 +1,5 @@
 discord.py==2.1.0
-mysql-connector-python==8.0.31
+mysql-connector-python==8.0.32
 colorama==0.4.6
 emoji==2.2.0
 python-a2s==1.3.0
