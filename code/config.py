@@ -3,7 +3,7 @@
 # Windows Users use forward slashes
 
 # Path to your Valheim servers log file
-file = '/var/log/valheim.log'
+VALHEIM_SERVER_LOG = '/var/log/valheim.log'
 
 BOT_TOKEN = ""
 
@@ -39,8 +39,11 @@ SQL_DATABASE = 'database'
 EXSERVERINFO = True
 
 # World file location used for showing file size.
-WORLDSIZE = True
+WORLDSIZE = False
 worldfile = '/home/user/valheim/.config/unity3d/IronGate/Valheim/worlds/world.db.old'
+
+# 30 min version check loop, If disabled bot needs to be running before starting server so it can get version info from log file.
+VERSIONLOOP = False
 
 # Enable sending debug info to a channel
 USEDEBUGCHAN = False
@@ -48,18 +51,7 @@ USEDEBUGCHAN = False
 # BUGCHANNEL - where the bot shows debug info
 BUGCHANNEL_ID = 000000000000000000
 
-# Commands Roles. Discord roles that can use command.
-DEATHS_CMD = "@everyone"
-STATS_CMD = "@everyone"
-PLAYERSTATS_CMD = "@everyone"
-ACTIVE_CMD = "@everyone"
-VERSIONS_CMD = "@everyone"
-SETSTATUS_CMD = "Admin"
-SAVESTATS_CMD = "Admin","Mod"
-PLOC_CMD = "@everyone"
-JOINCODE_CMD = "@everyone"
-
-# PLOCINFO - used for tracking placed locations to determine percent of world exploed. Will not show right on an existing world ***Must rerun dbsetup.py if changing this to True if you ran it all ready***
+# PLOCINFO - used for tracking placed locations to determine percent of world exploed ***Must rerun dbsetup.py if changing this to True if you ran it all ready***
 PLOCINFO = True
 
 # Path to save bots log file
@@ -67,3 +59,10 @@ LOG_FILE = "logs/valheimbot.log"
 
 # Logging level DEBUG|INFO|WARNING|ERROR|CRITICAL
 LOG_LEVEL = "INFO"
+
+# Check steam for server updates (Does not check default_old or beta branches)
+# Steam does not list the servers version number, this checks the last updated timestamp from steam 
+# and stores it in the mysql database to see if it has changed. If timestamp from steam is newer then one in 
+# mysql database sends a notice to log and LOGCHAN_ID channel
+# EXSERVERINFO needs to be set to True if setting this to True
+CHECK_UPDATE = False

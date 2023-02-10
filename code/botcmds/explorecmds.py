@@ -4,8 +4,6 @@ from discord import app_commands
 from discord.ext import commands
 from config import (
     LOG_LEVEL,
-    LOGCHAN_ID,
-    PLOC_CMD,
     DISCORD_SERVER,
 )
 
@@ -22,35 +20,52 @@ class Explored(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # Slash command error handling
     async def cog_app_command_error(self, interaction, error) -> None:
         if isinstance(error, app_commands.MissingPermissions):
-            logger.error(f"MissingPermissions from command {interaction.command.name}, User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                f'Command "{interaction.command.name}" gave error {error}',
-                ephemeral=True,
+            logger.error(
+                f"MissingPermissions from command {interaction.command.name}, User: {interaction.user.name}, {error}"
             )
+            if interaction.response.is_done():
+                await interaction.followup.send(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
+            else:
+                await interaction.response.send_message(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
         if isinstance(error, app_commands.errors.CheckFailure):
-            logger.error(f"CheckFailure from command {interaction.command.name}, User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                f'Command "{interaction.command.name}" gave error {error}',
-                ephemeral=True,
+            logger.error(
+                f"CheckFailure from command {interaction.command.name}, User: {interaction.user.name}, {error}"
             )
+            if interaction.response.is_done():
+                await interaction.followup.send(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
+            else:
+                await interaction.response.send_message(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
         else:
             logger.error(f"An error occurred! User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                "An error occurred!", ephemeral=True
-            )
+            if interaction.response.is_done():
+                await interaction.followup.send("An error occurred!", ephemeral=True)
+            else:
+                await interaction.response.send_message(
+                    "An error occurred!", ephemeral=True
+                )
 
-    async def chancheck(interaction: discord.Integration):
-        if interaction.channel.id == LOGCHAN_ID or commands.is_owner():
-            return True
-
+    # Explored command
     @app_commands.command(
         name="explored",
         description="Shows total world locations and how many have be explored.",
     )
-    @app_commands.checks.has_any_role(PLOC_CMD)
-    @app_commands.check(chancheck)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def explored(self, interaction: discord.Integration):
         ldrembed = discord.Embed(title="World Explored Stats", color=0x33A163)
         botsql = self.bot.get_cog("BotSQL")
@@ -69,7 +84,9 @@ class Explored(commands.Cog):
         try:
             Info1 = Info1[0]
         except IndexError:
-            logger.error("Did not find total locations in the database, Please restart server with bot running.")
+            logger.error(
+                "Did not find total locations in the database, Please restart server with bot running."
+            )
         ldrembed.add_field(
             name="Total Locations", value="{}".format(Info1[0]), inline=True
         )

@@ -20,38 +20,59 @@ class Main(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # Slash command error handling
     async def cog_app_command_error(self, interaction, error) -> None:
         if isinstance(error, app_commands.MissingPermissions):
-            logger.error(f"MissingPermissions from command {interaction.command.name}, User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                f'Command "{interaction.command.name}" gave error {error}',
-                ephemeral=True,
+            logger.error(
+                f"MissingPermissions from command {interaction.command.name}, User: {interaction.user.name}, {error}"
             )
+            if interaction.response.is_done():
+                await interaction.followup.send(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
+            else:
+                await interaction.response.send_message(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
         if isinstance(error, app_commands.errors.CheckFailure):
-            logger.error(f"CheckFailure from command {interaction.command.name}, User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                f'Command "{interaction.command.name}" gave error {error}',
-                ephemeral=True,
+            logger.error(
+                f"CheckFailure from command {interaction.command.name}, User: {interaction.user.name}, {error}"
             )
+            if interaction.response.is_done():
+                await interaction.followup.send(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
+            else:
+                await interaction.response.send_message(
+                    f'Command "{interaction.command.name}" gave error {error}',
+                    ephemeral=True,
+                )
         else:
             logger.error(f"An error occurred! User: {interaction.user.name}, {error}")
-            await interaction.response.send_message(
-                "An error occurred!", ephemeral=True
-            )
+            if interaction.response.is_done():
+                await interaction.followup.send("An error occurred!", ephemeral=True)
+            else:
+                await interaction.response.send_message(
+                    "An error occurred!", ephemeral=True
+                )
 
-    async def chancheck(interaction: discord.Integration):
-        if interaction.channel.id == config.LOGCHAN_ID or commands.is_owner():
-            return True
-
+    # Deaths command
     @app_commands.command(
         name="deaths",
         description="Shows a top 5 leaderboard of players with the most deaths. \n Available: 1-10 (default: 5)",
     )
-    @app_commands.checks.has_any_role(config.DEATHS_CMD)
-    @app_commands.check(chancheck)
-    async def leaderboards(self, interaction: discord.Integration, arg: Optional[int] = 5):
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
+    async def leaderboards(
+        self, interaction: discord.Integration, arg: Optional[int] = 5
+    ):
         ldrembed = discord.Embed(
-            title=f":skull_crossbones: __Death Leaderboards (top {arg})__ :skull_crossbones:", color=0xFFC02C)
+            title=f":skull_crossbones: __Death Leaderboards (top {arg})__ :skull_crossbones:",
+            color=0xFFC02C,
+        )
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
         sql = (
@@ -80,14 +101,15 @@ class Main(commands.Cog):
         mycursor.close()
         await interaction.response.send_message(embed=ldrembed)
 
+    # Playerstats command
     @app_commands.command(
         name="playerstats",
         description="Shows player stats on active monitored world.\n Arg= <Players Name>",
     )
     @app_commands.rename(arg="name")
     @app_commands.describe(arg="Players Name")
-    @app_commands.checks.has_any_role(config.PLAYERSTATS_CMD)
-    @app_commands.check(chancheck)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def playstats(self, interaction: discord.Integration, arg: str):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
@@ -113,15 +135,18 @@ class Main(commands.Cog):
             plsembed.add_field(name="Deaths:", value=Info[1], inline=True)
             await interaction.response.send_message(embed=plsembed)
         else:
-            await interaction.response.send_message(f":no_entry_sign: **{arg}** Not Found")
+            await interaction.response.send_message(
+                f":no_entry_sign: **{arg}** Not Found"
+            )
         mycursor.close()
 
+    # Active command
     @app_commands.command(
         name="active",
         description="Shows who is currently logged into the server and how long they have been on for.",
     )
-    @app_commands.checks.has_any_role(config.ACTIVE_CMD)
-    @app_commands.check(chancheck)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def actives(self, interaction: discord.Integration):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
@@ -130,7 +155,9 @@ class Main(commands.Cog):
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 0:
-            await interaction.response.send_message(":globe_with_meridians: 0 Players Active")
+            await interaction.response.send_message(
+                ":globe_with_meridians: 0 Players Active"
+            )
         else:
             ldrembed = discord.Embed(
                 title=":man_raising_hand: __Active Users__ :woman_raising_hand:",
@@ -149,16 +176,17 @@ class Main(commands.Cog):
             await interaction.response.send_message(embed=ldrembed)
         mycursor.close()
 
+    # Version command
     @app_commands.command(
         name="version",
         description="Shows current version of Valheim server is running.",
     )
-    @app_commands.checks.has_any_role(config.VERSIONS_CMD)
-    @app_commands.check(chancheck)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def versions(self, interaction: discord.Integration):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT serverversion FROM exstats WHERE id = 1"""
+        sql = """SELECT serverversion FROM serverinfo WHERE id = 1"""
         mycursor.execute(sql)
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
@@ -173,15 +201,19 @@ class Main(commands.Cog):
             )
         mycursor.close()
 
-    @app_commands.command(name="setstatus", description="Set status message of the bot.")
+    # Setstatus command
+    @app_commands.command(
+        name="setstatus", description="Set status message of the bot."
+    )
     @app_commands.rename(arg="activity")
     @app_commands.rename(arg1="message")
-    @app_commands.checks.has_any_role(config.SETSTATUS_CMD)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True, administrator=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def _setstatus(
         self,
         interaction: discord.Integration,
         arg: Literal["playing", "watching", "listening"],
-        arg1: str
+        arg1: str,
     ):
         if arg == "playing":
             await self.bot.change_presence(activity=discord.Game(arg1))
@@ -197,14 +229,17 @@ class Main(commands.Cog):
                     type=discord.ActivityType.listening, name=arg1
                 )
             )
-        await interaction.response.send_message(f"Status updated to: {arg}: {arg1}", ephemeral=True)
+        await interaction.response.send_message(
+            f"Status updated to: {arg}: {arg1}", ephemeral=True
+        )
 
+    # Savestats command
     @app_commands.command(
         name="savestats",
         description="Shows how many zods where saved and time it took to save them.",
     )
-    @app_commands.checks.has_any_role(config.SAVESTATS_CMD)
-    @app_commands.check(chancheck)
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True, administrator=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def savestats(self, interaction: discord.Integration):
         if config.EXSERVERINFO == True:
             botsql = self.bot.get_cog("BotSQL")
@@ -233,16 +268,23 @@ class Main(commands.Cog):
                     )
                 await interaction.response.send_message(embed=sembed, ephemeral=True)
             else:
-                await interaction.response.send_message(":no_entry_sign: No World File Save Stats Found", ephemeral=True)
+                await interaction.response.send_message(
+                    ":no_entry_sign: No World File Save Stats Found", ephemeral=True
+                )
             mycursor.close()
         else:
             await interaction.response.send_message(
-                ":no_entry_sign: Extra Server Info is turned off, turn on to see save stats", ephemeral=True
+                ":no_entry_sign: Extra Server Info is turned off, turn on to see save stats",
+                ephemeral=True,
             )
 
-    @app_commands.command(name="joincode", description="Shows join code for the server. (For servers using crossplay)")
-    @app_commands.checks.has_any_role(config.JOINCODE_CMD)
-    @app_commands.check(chancheck)
+    # Joincode command
+    @app_commands.command(
+        name="joincode",
+        description="Shows join code for the server. (For servers using crossplay)",
+    )
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
     async def _joincode(self, interaction: discord.Integration):
         ldrembed = discord.Embed(
             title=config.SERVER_NAME,
@@ -250,15 +292,15 @@ class Main(commands.Cog):
         )
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT jocode FROM serverstats WHERE id = 1 LIMIT 1"""
+        sql = """SELECT jocode FROM serverinfo WHERE id = 1 LIMIT 1"""
         mycursor.execute(sql)
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 0:
-            logger.error(
-                f"ERROR: Join code missing from database"
+            logger.error(f"ERROR: Join code missing from database")
+            await interaction.response.send_message(
+                "No join code found sorry", ephemeral=True
             )
-            await interaction.response.send_message("No join code found sorry", ephemeral=True)
         else:
             ldrembed.add_field(
                 name="Join Code",

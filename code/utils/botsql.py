@@ -36,6 +36,7 @@ class BotSQL(commands.Cog):
         except mysql.connector.Error as err:
             logger.error(f"{err} From MySQL database")
 
+    # Get mysql cursor
     async def get_cursor(self):
         try:
             mydb.ping(reconnect=True, attempts=3, delay=5)
@@ -47,9 +48,11 @@ class BotSQL(commands.Cog):
             logger.warning("Connection to MySQL database went away... Reconnecting ")
         return mydb.cursor()
 
+    # Mysql commit
     async def botmydb(self):
         mydb.commit()
 
+    # Mysql get database connection
     async def get_mydb(self):
         try:
             mydb.ping(reconnect=True, attempts=3, delay=5)

@@ -2,12 +2,21 @@ import os
 import discord
 import signal
 import logging
-from config import file, BOT_PREFIX, LOG_LEVEL, BOT_TOKEN, USEDEBUGCHAN, DISCORD_SERVER, LOG_FILE, EXSERVERINFO
+from config import (
+    VALHEIM_SERVER_LOG,
+    BOT_PREFIX,
+    LOG_LEVEL,
+    BOT_TOKEN,
+    USEDEBUGCHAN,
+    DISCORD_SERVER,
+    LOG_FILE,
+    EXSERVERINFO,
+    VERSIONLOOP,
+    CHECK_UPDATE,
+)
 from discord.ext import commands
 from logging.handlers import TimedRotatingFileHandler
 
-######################### Code below ##########################
-##### Dont complain if you edit it and something dont work ####
 
 intents = discord.Intents.default()
 intents.members = True
@@ -17,16 +26,14 @@ cogs_dir = "botcmds"
 
 
 logging.basicConfig(
-    handlers=[
-        TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=5)
-    ],
+    handlers=[TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=5)],
     format="%(asctime)s - %(levelname)s - %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-dislog = logging.getLogger('discord')
+dislog = logging.getLogger("discord")
 logger.setLevel(LOG_LEVEL)
-dislog.setLevel('INFO')
+dislog.setLevel("INFO")
 
 
 def signal_handler(signal, frame):
@@ -34,8 +41,8 @@ def signal_handler(signal, frame):
     logging.shutdown()
     os._exit(0)
 
-class MyBot(commands.Bot):
 
+class MyBot(commands.Bot):
     async def setup_hook(self):
         signal.signal(signal.SIGINT, signal_handler)
         for extension in startup_extensions:
@@ -61,18 +68,19 @@ class MyBot(commands.Bot):
         botsql = bot.get_cog("BotSQL")
         await botsql.mydbconnect()
         maincog = bot.get_cog("MainBot")
-        if not maincog.mainloop.is_running():
-            maincog.mainloop.start(file)
-        if not maincog.serveronline.is_running():
-            maincog.serveronline.start()
+        maincog.mainloop.start(VALHEIM_SERVER_LOG)
+        maincog.serveronline.start()
         if USEDEBUGCHAN:
             await bot.load_extension("utils.debugchan")
             logger.debug("Loaded extension utils.debugchan")
             bugcog = bot.get_cog("DebugBot")
-            if not bugcog.debugloop.is_running():
-                bugcog.debugloop.start()
-        if EXSERVERINFO:
+            bugcog.debugloop.start()
+        if EXSERVERINFO and VERSIONLOOP:
             maincog.versioncheck.start()
+        if CHECK_UPDATE:
+            await bot.load_extension("utils.updateneeded")
+            logger.debug("Loaded extension utils.updateneeded")
+            bot.get_cog("UpdateNeeeded").checkversion.start()
         self.tree.copy_global_to(guild=discord.Object(id=DISCORD_SERVER))
         await self.tree.sync(guild=discord.Object(id=DISCORD_SERVER))
         logger.info(f"Synced slash commands for {self.user}")

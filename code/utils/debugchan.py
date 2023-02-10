@@ -14,6 +14,7 @@ class DebugBot(commands.Cog):
         self.bot = bot
         self.last_pos = False
 
+    # Loop for reading bots log file and sending to discord channel
     @tasks.loop(seconds=2)
     async def debugloop(self):
         bugchannel = self.bot.get_channel(BUGCHANNEL_ID)
@@ -36,8 +37,14 @@ class DebugBot(commands.Cog):
                     )
                 else:
                     if line:
-                        newline = re.search("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} - (\w+) - ([\w\._]+:) (.+)$", line)
-                        if re.search("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} - \w+ - [\w\._]+: Got current time: 00:01, Resetting log file position for debug channel output$", line):
+                        newline = re.search(
+                            "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} - (\w+) - ([\w\._]+:) (.+)$",
+                            line,
+                        )
+                        if re.search(
+                            "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} - \w+ - [\w\._]+: Got current time: 00:01, Resetting log file position for debug channel output$",
+                            line,
+                        ):
                             return
                         if newline:
                             if newline.group(1) == "INFO":
@@ -52,7 +59,7 @@ class DebugBot(commands.Cog):
                                 buginfo = discord.Embed(
                                     title=":biohazard: **WARNING** :biohazard:",
                                     description=newline.group(3),
-                                    color=0xd36803,
+                                    color=0xD36803,
                                 )
                                 buginfo.set_author(name=SERVER_NAME)
                                 buginfo.set_footer(text=newline.group(2))
@@ -68,7 +75,7 @@ class DebugBot(commands.Cog):
                                 buginfo = discord.Embed(
                                     title=f":large_blue_diamond: **{newline.group(1)}** :large_blue_diamond:",
                                     description=newline.group(3),
-                                    color=0x0407cd,
+                                    color=0x0407CD,
                                 )
                                 buginfo.set_author(name=SERVER_NAME)
                                 buginfo.set_footer(text=newline.group(2))
@@ -83,11 +90,14 @@ class DebugBot(commands.Cog):
         logger.info(f"Bug channel: {self.bot.get_channel(BUGCHANNEL_ID)}")
         logger.info("Bug to discord loop started")
 
+    # Check if its 1 min after midnight and reset log position
     async def checktime(self):
         now = datetime.now()
         current_time = now.strftime("%H:%M")
         if current_time == "00:01":
-            logger.debug(f"Got current time: {current_time}, Resetting log file position for debug channel output")
+            logger.debug(
+                f"Got current time: {current_time}, Resetting log file position for debug channel output"
+            )
             return True
         else:
             return False
