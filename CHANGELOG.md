@@ -61,4 +61,11 @@ Move to the code dir and run `python3 v2.dbupdate.py` to update database's.
 
 ### Changed
 
+<<<<<<< HEAD
 - discord.py updated to version 2.1.0.
+=======
+- discord.py updated to version 2.1.0.
+### Removed
+
+- "stats" and "help" commands removed
+>>>>>>> 2b7d2bbe501fb9bc7f79a223e75de6c2db2d7f19
