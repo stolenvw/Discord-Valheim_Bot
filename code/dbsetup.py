@@ -178,7 +178,7 @@ def serverinfoinsert():
     mycursor2 = mydb.cursor()
     print(Fore.GREEN + "Adding 1st row to table serverinfo" + Style.RESET_ALL)
     sql = (
-        """INSERT INTO `serverinfo` VALUES (1,NULL,0,'3.0.0','NULL',NULL,NULL)"""
+        """INSERT INTO `serverinfo` VALUES (1,NULL,0,'3.0.1','NULL',NULL,NULL)"""
     )
     mycursor2.execute(sql)
     mydb.commit()

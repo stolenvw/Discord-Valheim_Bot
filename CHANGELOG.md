@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2023-4-12
+
 ### Changed
 
-- regexp for getting server version from log file, due to changes in public test beta 0.215.1
+- regexp for getting server version from log file, due to changes in Valheim version 0.215.2
 
 ## [3.0.0] - 2023-2-10
 

@@ -21,7 +21,7 @@ ssaved1 = (
     "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Saved ([0-9]+) zdos$"
 )
 ssaved2 = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: World saved \( ([0-9]+\.[0-9]+)ms \)$"
-sversion = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Valheim version:([\.0-9]+)$"
+sversion = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Valheim version: ([\.0-9]+) \(network version [1-9]\)$"
 gdays = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Time [\.0-9]+, day:([0-9]+)\s{1,}nextm:[\.0-9]+\s+skipspeed:[\.0-9]+$"
 ploc = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Placed locations in zone ([-,0-9]+)  duration ([\.0-9]+) ms$"
 tloc = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Loaded ([0-9]+) locations$"
@@ -397,7 +397,7 @@ class MainBot(commands.Cog):
     @mainloop.before_loop
     async def before_mainloop(self):
         await self.bot.wait_until_ready()
-        logger.info("Valheim Discord Bot V3.0.0")
+        logger.info("Valheim Discord Bot V3.0.1")
         logger.info(f"Bot connected as {self.bot.user}")
         logger.info(f"Command prefix: {config.BOT_PREFIX}")
         logger.info(f"Log channel: #{self.bot.get_channel(config.LOGCHAN_ID)}")
@@ -474,7 +474,8 @@ class MainBot(commands.Cog):
     async def versioncheck(self):
         lchannel = self.bot.get_channel(config.LOGCHAN_ID)
         try:
-            serversion = a2s.info(config.SERVER_ADDRESS).keywords
+            keyword = a2s.info(config.SERVER_ADDRESS).keywords
+            serversion = re.search('^"gameversion"="([0-9.]+)","networkversion"="[0-9]"$', keyword).group(1)
             logger.debug(f"Version check loop got version {serversion}")
             botsql = self.bot.get_cog("BotSQL")
             mycursor = await botsql.get_cursor()
