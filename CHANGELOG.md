@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- mysql-connector-python updated to version 8.0.33
+
 ## [3.0.1] - 2023-4-12
 
 ### Changed
