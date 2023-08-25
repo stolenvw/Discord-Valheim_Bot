@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- change to version regexp for changes made in 0.217.14
+- change to saved zdos regexp for changes made in 0.217.14
 - discord-py updated to 2.2.3
 - mysql-connector-python updated to version 8.0.33
 - emoji updated to version 2.5.0
