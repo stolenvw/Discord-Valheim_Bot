@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - emoji updated to version 2.8.0
 - gevent 23.9.0.post1
 
+### Fixed
+
+- Getting version number from A2S, by headbug
+
 ## [3.0.1] - 2023-4-12
 
 ### Changed
