@@ -475,7 +475,7 @@ class MainBot(commands.Cog):
         lchannel = self.bot.get_channel(config.LOGCHAN_ID)
         try:
             keyword = a2s.info(config.SERVER_ADDRESS).keywords
-            serversion = re.search('^"gameversion"="([0-9.]+)","networkversion"="[0-9]"$', keyword).group(1)
+            serversion = re.search('^g=([0-9.]+)', keyword).group(1)
             logger.debug(f"Version check loop got version {serversion}")
             botsql = self.bot.get_cog("BotSQL")
             mycursor = await botsql.get_cursor()
