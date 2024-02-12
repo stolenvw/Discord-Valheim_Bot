@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.0.2] - 2024-2-12
 
 ### Changed
 
@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - change to saved zdos regexp for changes made in 0.217.14
 - discord-py updated to 2.3.2
 - mysql-connector-python updated to version 8.0.33
-- emoji updated to version 2.8.0
-- gevent 23.9.0.post1
+- emoji updated to version 2.10.1
+- gevent 23.9.1
 
 ### Fixed
 
