@@ -1,14 +1,14 @@
 # Valheim Discord Bot
-Valheim discord bot originally based off of [ckbaudio's valheim-discord-bot](https://github.com/ckbaudio/valheim-discord-bot).
+Valheim discord bot was originally based on [ckbaudio's valheim-discord-bot](https://github.com/ckbaudio/valheim-discord-bot).
 
 ## Setup:
 **Working MySQL server is needed for this bot.**  
-`pip install -r requirements.txt` To install Pyhton requirements.
+`pip install -r requirements.txt` To install Python requirements.
 
 ## [config.py](code/config.py)
-Edit this file with your info. Setting should be self-explanitory.  
+Edit this file with your info. Setting should be self-explanatory.  
 
-Add `-logfile /location/to/file.log` to your Vlaheim servers start command to get a logfile.  
+Add `-logfile /location/to/file.log` to your Valheim servers start command to get a logfile.  
 
 For `WORLDSIZE` user running the bot must have read permissions to the world.db file
 
