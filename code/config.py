@@ -13,7 +13,11 @@ BOT_PREFIX = "!"
 # Server ip and port for A2S port needs to be +1 of the port number used in -port
 SERVER_ADDRESS = ("0.0.0.0",2457)
 
-# Shows up in embeds for stats report
+# Server info for /server command
+SERVER_INFO = "IP:2456"
+SERVER_PASS = "Somepassword"
+
+# Shows up in embeds for stats report and /server command
 SERVER_NAME = "Server Name"
 
 # DISCORD_SERVER - Discord server id for syncing slash commands
@@ -60,9 +64,12 @@ LOG_FILE = "logs/valheimbot.log"
 # Logging level DEBUG|INFO|WARNING|ERROR|CRITICAL
 LOG_LEVEL = "INFO"
 
-# Check steam for server updates (Does not check default_old or beta branches)
+# Check steam for server updates
 # Steam does not list the servers version number, this checks the last updated timestamp from steam 
 # and stores it in the mysql database to see if it has changed. If timestamp from steam is newer then one in 
 # mysql database sends a notice to log and LOGCHAN_ID channel
 # EXSERVERINFO needs to be set to True if setting this to True
-CHECK_UPDATE = False
+CHECK_UPDATE = True
+
+# Valheim branch to check (Options: public, default_old, default_preml, public-test)
+VALHEIM_BRANCH = "public"

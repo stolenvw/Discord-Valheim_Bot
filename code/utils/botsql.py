@@ -1,4 +1,4 @@
-import mysql.connector
+import MySQLdb
 import logging
 from discord.ext import commands
 from config import SQL_HOST as MYhost
@@ -20,33 +20,33 @@ class BotSQL(commands.Cog):
 
     async def mydbconnect(self):
         global mydb
-        mydb = mysql.connector.connect(
-            host=MYhost,
-            user=MYuser,
-            password=MYpass,
-            database=MYbase,
-            port=MYport,
-        )
         try:
-            if mydb.is_connected():
-                db_Info = mydb.get_server_info()
-                logger.info(
-                    f"Connected to MySQL database... MySQL Server version {db_Info}"
-                )
-        except mysql.connector.Error as err:
+            mydb = MySQLdb.connect(
+                host=MYhost,
+                user=MYuser,
+                password=MYpass,
+                database=MYbase,
+                port=MYport,
+            )
+            logger.info(
+                f"Connected to MySQL database... MySQL Server version {mydb.get_server_info()}"
+            )
+        except MySQLdb.OperationalError as err:
             logger.error(f"{err} From MySQL database")
 
     # Get mysql cursor
     async def get_cursor(self):
         try:
-            mydb.ping(reconnect=True, attempts=3, delay=5)
+            mydb.ping()
         except NameError as er:
             logger.warning(f"{er} Reconnecting MySQL database")
             await self.mydbconnect()
-        except mysql.connector.Error:
-            await self.mydbconnect()
-            logger.warning("Connection to MySQL database went away... Reconnecting ")
-        return mydb.cursor()
+        except MySQLdb.OperationalError as err:
+            if err.args[0] == 2006:
+                await self.mydbconnect()
+                logger.warning("Connection to MySQL database went away... Reconnecting ")
+        else:
+            return mydb.cursor()
 
     # Mysql commit
     async def botmydb(self):
@@ -55,14 +55,16 @@ class BotSQL(commands.Cog):
     # Mysql get database connection
     async def get_mydb(self):
         try:
-            mydb.ping(reconnect=True, attempts=3, delay=5)
+            mydb.ping()
         except NameError as er:
             logger.warning(f"{er} Reconnecting MySQL database")
             await self.mydbconnect()
-        except mysql.connector.Error as err:
-            await self.mydbconnect()
-            logger.warning("Connection to MySQL database went away... Reconnecting ")
-        return mydb
+        except MySQLdb.OperationalError as err:
+            if err.args[0] == 2006:
+                await self.mydbconnect()
+                logger.warning("Connection to MySQL database went away... Reconnecting ")
+        else:
+            return mydb
 
 
 async def setup(bot):

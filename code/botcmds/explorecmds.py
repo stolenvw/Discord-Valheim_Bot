@@ -70,11 +70,11 @@ class Explored(commands.Cog):
         ldrembed = discord.Embed(title="World Explored Stats", color=0x33A163)
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT COUNT(*) FROM plocinfo WHERE locations IS NULL"""
-        mycursor.execute(sql)
+        mycursor.execute("""SELECT COUNT(*) FROM plocinfo WHERE locations IS NULL""")
         Info = mycursor.fetchall()
-        sql1 = """SELECT locations FROM plocinfo WHERE locations IS NOT NULL LIMIT 1"""
-        mycursor.execute(sql1)
+        mycursor.execute(
+            """SELECT locations FROM plocinfo WHERE locations IS NOT NULL LIMIT 1"""
+        )
         Info1 = mycursor.fetchall()
         mycursor.close()
         try:
@@ -87,15 +87,11 @@ class Explored(commands.Cog):
             logger.error(
                 "Did not find total locations in the database, Please restart server with bot running."
             )
-        ldrembed.add_field(
-            name="Total Locations", value="{}".format(Info1[0]), inline=True
-        )
-        ldrembed.add_field(
-            name="Locations Explored", value="{}".format(Info[0]), inline=True
-        )
+        ldrembed.add_field(name="Total Locations", value=Info1[0], inline=True)
+        ldrembed.add_field(name="Locations Explored", value=Info[0], inline=True)
         ldrembed.add_field(
             name="Percent of World Explored",
-            value="{}%".format(format(Info[0] / int(Info1[0]) * 100, ".2f")),
+            value=f"{format(Info[0] / int(Info1[0]) * 100, '.2f')}%",
             inline=True,
         )
         await interaction.response.send_message(embed=ldrembed)

@@ -1,7 +1,6 @@
 import config
-import mysql.connector
+import MySQLdb
 from colorama import Fore, Style
-from mysql.connector import errorcode
 from config import SQL_HOST as MYhost
 from config import SQL_PORT as MYport
 from config import SQL_USER as MYuser
@@ -17,7 +16,7 @@ TABLES["events"] = (
     " `smessage` text NOT NULL,"
     " `image` text NOT NULL,"
     " PRIMARY KEY (`id`),"
-    " UNIQUE KEY `type` (`type`(7)) USING BTREE"
+    " UNIQUE KEY `type` (`type`) USING BTREE"
     ") ENGINE=InnoDB"
 )
 
@@ -73,28 +72,28 @@ TABLES["serverinfo"] = (
     ") ENGINE=InnoDB"
 )
 
+
 # Connect to mysql
 def mydbconnect():
     global mydb
-    mydb = mysql.connector.connect(
-        host=MYhost,
-        user=MYuser,
-        password=MYpass,
-        database=MYbase,
-        port=MYport,
-    )
     try:
-        if mydb.is_connected():
-            db_Info = mydb.get_server_info()
-            print(
-                Fore.GREEN + "Connected to MySQL database... MySQL Server version ",
-                db_Info + Style.RESET_ALL,
-            )
-    except mysql.connector.Error as err:
-        print(Fore.RED + err + "From MySQL database" + Style.RESET_ALL)
+        mydb = MySQLdb.connect(
+            host=MYhost,
+            user=MYuser,
+            password=MYpass,
+            database=MYbase,
+            port=MYport,
+        )
+        print(
+            f"{Fore.GREEN}Connected to MySQL database... MySQL Server version {mydb.get_server_info()}{Style.RESET_ALL}"
+        )
+    except MySQLdb.OperationalError as err:
+        print(f"{Fore.RED}{err} From MySQL database{Style.RESET_ALL}")
+        exit()
 
 
 mydbconnect()
+
 
 # List tables in the database
 def showtables():
@@ -113,9 +112,7 @@ def showtables():
 
 # Add tables to database
 def maketable():
-    print(
-        Fore.GREEN + "Checking for tables and adding missing tables" + Style.RESET_ALL
-    )
+    print(f"{Fore.GREEN}Checking for tables and adding missing tables{Style.RESET_ALL}")
     mycursor = mydb.cursor()
     outputList = showtables()
     for table_name in TABLES:
@@ -124,27 +121,27 @@ def maketable():
             table_description = TABLES[table_name]
         if table_description:
             try:
-                print(Fore.GREEN + "Creating table {}: ".format(table_name), end="")
+                print(f"{Fore.GREEN}Creating table {table_name}:", end="")
                 mycursor.execute(table_description)
                 if table_name == "events":
                     eventinsert()
                 if table_name == "serverinfo":
                     serverinfoinsert()
-            except mysql.connector.Error as err:
-                if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-                    print(Fore.RED + "already exists." + Style.RESET_ALL)
+            except MySQLdb.OperationalError as err:
+                if err.args[0] == 1050:
+                    print(f"{Fore.RED}{err.args[1]}{Style.RESET_ALL}")
                 else:
-                    print(Fore.RED + err.msg + Style.RESET_ALL)
+                    print(f"{Fore.RED}{err}{Style.RESET_ALL}")
             else:
-                print(Fore.GREEN + "OK" + Style.RESET_ALL)
+                print(f"{Fore.GREEN}OK{Style.RESET_ALL}")
     mycursor.close()
-    print(Fore.GREEN + "Done" + Style.RESET_ALL)
+    print(f"{Fore.GREEN}Done{Style.RESET_ALL}")
     updateserverstats()
 
 
 # Add data to newly made events table
 def eventinsert():
-    print(Fore.GREEN + "Adding events info to table events" + Style.RESET_ALL)
+    print(f"{Fore.GREEN}Adding events info to table events{Style.RESET_ALL}")
     mycursor1 = mydb.cursor()
     sql = """INSERT INTO `events` (`id`, `type`, `smessage`, `image`) VALUES (%s, %s, %s, %s)"""
     val = [
@@ -165,8 +162,13 @@ def eventinsert():
         (15, "army_goblin", "The horde is attacking", "Fuling.png"),
         (16, "Bats", "You stirred the cauldron", "Bat.png"),
         (17, "army_seekers", "They Sought You Out", "seekers.png"),
-        (18, "Gjall", "What's up gjall?", "gjall.png"),
+        (18, "army_gjall", "What's up gjall?", "gjall.png"),
         (19, "Mistlands_DvergrBossEntrance1", "Mistlands", "thequeen.png"),
+        (20, "army_charred", "The undead army marches.", "Charred_Twitcher.png"),
+        (21, "army_charredspawner", "The dead have been summoned.", "Charred_Twitcher.png"),
+        (22, "hildirboss1", "She's hot on your tail!", "Brenna.png"),
+        (23, "hildirboss2", "You get the chills...", "Cultist.png"),
+        (24, "hildirboss3", "They were bros, man.", "Zil_Thungr.png"),
     ]
     mycursor1.executemany(sql, val)
     mydb.commit()
@@ -176,37 +178,61 @@ def eventinsert():
 # Add data to newly made serverinfo table
 def serverinfoinsert():
     mycursor2 = mydb.cursor()
-    print(Fore.GREEN + "Adding 1st row to table serverinfo" + Style.RESET_ALL)
-    sql = (
-        """INSERT INTO `serverinfo` VALUES (1,NULL,0,'3.0.1','NULL',NULL,NULL)"""
+    print(f"{Fore.GREEN}Adding 1st row to table serverinfo{Style.RESET_ALL}")
+    mycursor2.execute(
+        """INSERT INTO `serverinfo` VALUES (1,NULL,0,'4.0.0','NULL',NULL,NULL)"""
     )
-    mycursor2.execute(sql)
     mydb.commit()
     mycursor2.close()
 
 
 # Drop serverstats table
 def updateserverstats():
-    print(Fore.GREEN + "Removing serverstats table if it exist" + Style.RESET_ALL)
+    print(f"{Fore.GREEN}Removing serverstats table if it exist{Style.RESET_ALL}")
     outputList = showtables()
     if "serverstats" in outputList:
         mycursor = mydb.cursor()
-        sql1 = "DROP TABLE serverstats"
-        mycursor.execute(sql1)
+        mycursor.execute("""DROP TABLE serverstats""")
         mydb.commit()
         mycursor.close()
-        print(Fore.GREEN + "Removed serverstats table" + Style.RESET_ALL)
+        print(f"{Fore.GREEN}Removed serverstats table{Style.RESET_ALL}")
     else:
-        print(Fore.BLUE + "Serverstats table already missing" + Style.RESET_ALL)
+        print(f"{Fore.BLUE}Serverstats table already missing{Style.RESET_ALL}")
+    updategjall()
+
+
+# Update Gjall event name
+def updategjall():
+    print(f"{Fore.GREEN}Updating Gjall event name{Style.RESET_ALL}")
+    mycursor = mydb.cursor()
+    mycursor.execute("""SELECT id, type FROM events WHERE type = 'Gjall' LIMIT 1""")
+    Info = mycursor.fetchall()
+    row_count = mycursor.rowcount
+    if row_count == 0:
+        print(
+            f"{Fore.BLUE}Event Gjall already updated{Style.RESET_ALL}"
+        )
+    else:
+        Info = Info[0]
+        if Info[1] != "army_gjall":
+            mycursor.execute(
+                """UPDATE events SET type = 'army_gjall' WHERE id = %s""",
+                (Info[0],),
+            )
+            mydb.commit()
+            print(f"{Fore.GREEN}Gjall event name updated{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.BLUE}Gjall event name already upto date{Style.RESET_ALL}")
+    mycursor.close()
     updateevents()
 
 
 # update events table
 def updateevents():
-    print(Fore.GREEN + "Updating events info to table events" + Style.RESET_ALL)
+    print(f"{Fore.GREEN}Updating events info to table events{Style.RESET_ALL}")
+    updateindex = updateeventsindex()
     mycursor = mydb.cursor()
-    sql = "SELECT type FROM events"
-    mycursor.execute(sql)
+    mycursor.execute("""SELECT type FROM events""")
     Info = mycursor.fetchall()
     val = False
     check = ["Bats" not in x for x in Info]
@@ -219,18 +245,62 @@ def updateevents():
             val = [("army_seekers", "They Sought You Out", "seekers.png")]
         else:
             val.append(("army_seekers", "They Sought You Out", "seekers.png"))
-    check = ["Gjall" not in x for x in Info]
+    check = ["army_gjall" not in x for x in Info]
     if False not in check:
         if not val:
-            val = [("Gjall", "What's up gjall?", "gjall.png")]
+            val = [("army_gjall", "What's up gjall?", "gjall.png")]
         else:
-            val.append(("Gjall", "What's up gjall?", "gjall.png"))
+            val.append(("army_gjall", "What's up gjall?", "gjall.png"))
     check = ["Mistlands_DvergrBossEntrance1" not in x for x in Info]
     if False not in check:
         if not val:
             val = [("Mistlands_DvergrBossEntrance1", "Mistlands", "thequeen.png")]
         else:
             val.append(("Mistlands_DvergrBossEntrance1", "Mistlands", "thequeen.png"))
+    check = ["army_charred" not in x for x in Info]
+    if False not in check:
+        if not val:
+            val = [("army_charred", "The undead army marches.", "Charred_Twitcher.png")]
+        else:
+            val.append(
+                ("army_charred", "The undead army marches.", "Charred_Twitcher.png")
+            )
+    check = ["army_charredspawner" not in x for x in Info]
+    if False not in check:
+        if not val:
+            val = [
+                (
+                    "army_charredspawner",
+                    "The dead have been summoned.",
+                    "Charred_Twitcher.png",
+                )
+            ]
+        else:
+            val.append(
+                (
+                    "army_charredspawner",
+                    "The dead have been summoned.",
+                    "Charred_Twitcher.png",
+                )
+            )
+    check = ["hildirboss1" not in x for x in Info]
+    if False not in check:
+        if not val:
+            val = [("hildirboss1", "She's hot on your tail!", "Brenna.png")]
+        else:
+            val.append(("hildirboss1", "She's hot on your tail!", "Brenna.png"))
+    check = ["hildirboss2" not in x for x in Info]
+    if False not in check:
+        if not val:
+            val = [("hildirboss2", "You get the chills...", "Cultist.png")]
+        else:
+            val.append(("hildirboss2", "You get the chills...", "Cultist.png"))
+    check = ["hildirboss3" not in x for x in Info]
+    if False not in check:
+        if not val:
+            val = [("hildirboss3", "They were bros, man.", "Zil_Thungr.png")]
+        else:
+            val.append(("hildirboss3", "They were bros, man.", "Zil_Thungr.png"))
     if val:
         Info = Info[0]
         sql = (
@@ -240,38 +310,36 @@ def updateevents():
         mydb.commit()
         for event in val:
             print(
-                Fore.GREEN + f"{event[0]} event added to the database" + Style.RESET_ALL
+                f"{Fore.GREEN}{event[0]} event added to the database{Style.RESET_ALL}"
             )
     else:
-        print(Fore.BLUE + "Events already upto date" + Style.RESET_ALL)
+        print(f"{Fore.BLUE}Events already upto date{Style.RESET_ALL}")
     mycursor.close()
     updatemessage()
 
 
 # Update blobs event message
 def updatemessage():
-    print(Fore.GREEN + "Updating message for Blobs event" + Style.RESET_ALL)
+    print(f"{Fore.GREEN}Updating message for Blobs event{Style.RESET_ALL}")
     mycursor = mydb.cursor()
-    sql = """SELECT id, smessage FROM events WHERE type = 'Blobs' LIMIT 1"""
-    mycursor.execute(sql)
+    mycursor.execute("""SELECT id, smessage FROM events WHERE type = 'Blobs' LIMIT 1""")
     Info = mycursor.fetchall()
     row_count = mycursor.rowcount
     if row_count == 0:
         print(
-            Fore.RED + "ERROR: Event Blobs not found in the database" + Style.RESET_ALL
+            f"{Fore.RED}ERROR: Event Blobs not found in the database{Style.RESET_ALL}"
         )
     else:
         Info = Info[0]
         if Info[1] != "A foul smell from the swamp":
-            sql = (
-                """UPDATE events SET smessage = 'A foul smell from the swamp' WHERE id = '%s'"""
-                % (Info[0])
+            mycursor.execute(
+                """UPDATE events SET smessage = 'A foul smell from the swamp' WHERE id = %s""",
+                (Info[0],),
             )
-            print(Fore.GREEN + "Blobs event message updated" + Style.RESET_ALL)
-            mycursor.execute(sql)
             mydb.commit()
+            print(f"{Fore.GREEN}Blobs event message updated{Style.RESET_ALL}")
         else:
-            print(Fore.BLUE + "Blobs event message already upto date" + Style.RESET_ALL)
+            print(f"{Fore.BLUE}Blobs event message already upto date{Style.RESET_ALL}")
     mycursor.close()
     movedata()
 
@@ -279,53 +347,58 @@ def updatemessage():
 # Move some stored info from exstats table to serverinfo table
 def movedata():
     print(
-        Fore.GREEN
-        + "Moving storage location for server version and gameday"
-        + Style.RESET_ALL
+        f"{Fore.GREEN}Moving storage location for server version and gameday{Style.RESET_ALL}"
     )
     mycursor = mydb.cursor()
-    sql = "SELECT serverversion FROM exstats WHERE id = 1"
-    sql1 = "SELECT `id`, `gameday` FROM `exstats` WHERE `gameday` IS NOT null ORDER BY `id` DESC LIMIT 1"
     try:
-        mycursor.execute(sql)
+        mycursor.execute("""SELECT serverversion FROM exstats WHERE id = 1""")
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
-    except mysql.connector.errors.ProgrammingError:
+    except MySQLdb.OperationalError:
         row_count = 0
-        print(Fore.BLUE + "Server version already moved" + Style.RESET_ALL)
+        print(f"{Fore.BLUE}Server version already moved{Style.RESET_ALL}")
     try:
-        mycursor.execute(sql1)
+        mycursor.execute(
+            """SELECT `id`, `gameday` FROM `exstats` WHERE `gameday` IS NOT null ORDER BY `id` DESC LIMIT 1"""
+        )
         Info1 = mycursor.fetchall()
         row_count1 = mycursor.rowcount
-    except mysql.connector.errors.ProgrammingError:
+    except MySQLdb.OperationalError:
         row_count1 = 0
-        print(Fore.BLUE + "Server gameday already moved" + Style.RESET_ALL)
+        print(f"{Fore.BLUE}Server gameday already moved{Style.RESET_ALL}")
     if row_count == 1:
-        sql = f"UPDATE serverinfo SET serverversion = '{Info[0][0]}' WHERE id = '1'"  # pyright: ignore
-        mycursor.execute(sql)
-        mydb.commit()
-        print(
-            Fore.GREEN + "Moved storage location for server version" + Style.RESET_ALL
+        mycursor.execute(
+            """UPDATE serverinfo SET serverversion = %s WHERE id = '1'""", (Info[0][0],) # pyright: ignore
         )
-        sql = """ALTER TABLE `exstats` DROP COLUMN `serverversion`"""
-        mycursor.execute(sql)
+        mydb.commit()
+        print(f"{Fore.GREEN}Moved storage location for server version{Style.RESET_ALL}")
+        mycursor.execute("""ALTER TABLE `exstats` DROP COLUMN `serverversion`""")
         mydb.commit()
     if row_count1 == 1:
-        sql = f"UPDATE serverinfo SET gameday = '{Info1[0][1]}' WHERE id = '1'"  # pyright: ignore
-        mycursor.execute(sql)
-        mydb.commit()
-        print(
-            Fore.GREEN + "Moved storage location for server gameday" + Style.RESET_ALL
+        mycursor.execute(
+            """UPDATE serverinfo SET gameday = %s WHERE id = '1'""", (Info1[0][1],) # pyright: ignore
         )
-        sql = """ALTER TABLE `exstats` DROP COLUMN `gameday`"""
-        mycursor.execute(sql)
+        mydb.commit()
+        print(f"{Fore.GREEN}Moved storage location for server gameday{Style.RESET_ALL}")
+        mycursor.execute("""ALTER TABLE `exstats` DROP COLUMN `gameday`""")
         mydb.commit()
     print(
-        Fore.GREEN
-        + "Done Moving storage location for server version and gameday"
-        + Style.RESET_ALL
+        f"{Fore.GREEN}Done Moving storage location for server version and gameday{Style.RESET_ALL}"
     )
     mycursor.close()
+
+def updateeventsindex():
+    mycursor = mydb.cursor()
+    sql = "SHOW INDEXES FROM events"
+    mycursor.execute(sql)
+    Info = mycursor.fetchall()
+    mydb.commit()
+    for i in Info:
+        if i[2] == "type":
+            if i[7] == 7:
+                mycursor.execute("ALTER TABLE `events` DROP INDEX `type`, ADD UNIQUE `type` (`type`(50)) USING BTREE")
+    mycursor.close()
+    return True
 
 
 maketable()

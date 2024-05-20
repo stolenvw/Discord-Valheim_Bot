@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### I dont play anymore so most of this is untested.
+
+Updating from older version:  
+Backup your mysql database.  
+`pip install -r requirements.txt` To install Pyhton requirements.  
+Run [dbsetup.py](code/dbsetup.py) To update database. `python3 dbsetup.py` 
+
+For mysqlclient, make sure you have `python3-dev default-libmysqlclient-dev build-essential pkg-config` installed if on Ubuntu / Debian,  
+and that pip install of `wheel` and `setuptools` are upto date
+
+### Added
+
+- V3 Branch to keep a copy of version 3.0.2
+- mysqlclient 2.2.4
+- config settings for /server command
+- /server command to display connection info and on/off line status
+- config setting to set what valheim branch to check for updates
+- new events for Ashlands
+
+### Changed
+
+- Clean up sql queries code
+- Clean up logging and discord message code
+
+### Removed
+
+- mysql-connector-python
+
 ## [3.0.2] - 2024-2-12
 
 ### Changed

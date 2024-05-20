@@ -27,9 +27,7 @@ ploc = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Placed locatio
 tloc = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Loaded ([0-9]+) locations$"
 joincode = '^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Session "[\w ]+" registered with join code ([0-9]+)$'
 servconnections = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: Connections ([0-9]+) ZDOS:[0-9]+  sent:[0-9]+ recv:[0-9]+"
-servplayfab = (
-    "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}:.+([pP]lay[fF]ab) logged in as .+$"
-)
+servplayfab = "^[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}:.+([pP]lay[fF]ab) logged in as .+$"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(config.LOG_LEVEL)
@@ -69,15 +67,18 @@ class MainBot(commands.Cog):
                         jocode = re.search(joincode, line).group(1)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = """SELECT jocode FROM serverinfo WHERE id = 1 LIMIT 1"""
-                        mycursor.execute(sql)
+                        mycursor.execute(
+                            """SELECT jocode FROM serverinfo WHERE id = 1 LIMIT 1"""
+                        )
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 0:
                             logger.error(f"ERROR: Join code missing from database")
                         else:
-                            sql = f"UPDATE serverinfo SET jocode = '{jocode}' WHERE id = 1"
-                            mycursor.execute(sql)
+                            mycursor.execute(
+                                """UPDATE serverinfo SET jocode = %s WHERE id = 1""",
+                                (jocode,),
+                            )
                             await botsql.botmydb()
                             embed = discord.Embed(
                                 title="Join Code",
@@ -92,8 +93,10 @@ class MainBot(commands.Cog):
                         pname = re.search(pdeath, line).group(1)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = f"UPDATE players SET deaths = deaths + 1 WHERE user = '{pname}'"
-                        mycursor.execute(sql)
+                        mycursor.execute(
+                            """UPDATE players SET deaths = deaths + 1 WHERE user = %s""",
+                            (pname,),
+                        )
                         await botsql.botmydb()
                         mycursor.close()
                         await lchannel.send(f":skull: **{pname}** just died!")
@@ -102,21 +105,23 @@ class MainBot(commands.Cog):
                         eventID = re.search(pevent, line).group(1)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = f"SELECT type, smessage, image FROM events WHERE type = '{eventID}' LIMIT 1"
-                        mycursor.execute(sql)
+                        mycursor.execute(
+                            """SELECT type, smessage, image FROM events WHERE type = %s LIMIT 1""",
+                            (eventID,),
+                        )
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 0:
                             logger.error(f"Event {eventID} missing from database")
                         else:
                             Info = Info[0]
-                            image = discord.File("img/" + Info[2], filename=Info[2])
+                            image = discord.File(f"img/{Info[2]}", filename=Info[2])
                             embed = discord.Embed(
                                 title=Info[0],
                                 colour=discord.Colour(0xB6000E),
                                 description=f"*{Info[1]}*",
                             )
-                            embed.set_thumbnail(url="attachment://" + Info[2])
+                            embed.set_thumbnail(url=f"attachment://{Info[2]}")
                             embed.set_author(name="📢 Random Mob Event")
                             await lchannel.send(file=image, embed=embed)
                         mycursor.close()
@@ -126,21 +131,20 @@ class MainBot(commands.Cog):
                         logID = re.search(pjoin, line).group(2)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = """SELECT id, ingame FROM players WHERE user = '%s'""" % (
-                            logJoin
+                        mycursor.execute(
+                            """SELECT id, ingame FROM players WHERE user = %s""",
+                            (logJoin,),
                         )
-                        mycursor.execute(sql)
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 0:
                             StartDate = await self.timenow()
                             JoinTime = int(time.time())
                             InGame = 1
-                            sql = (
-                                """INSERT INTO players (user, valid, startdate, jointime, ingame) VALUES ('%s', '%s', '%s', '%s', '%s')"""
-                                % (logJoin, logID, StartDate, JoinTime, InGame)
+                            mycursor.execute(
+                                """INSERT INTO players (user, valid, startdate, jointime, ingame) VALUES (%s, %s, %s, %s, %s)""",
+                                (logJoin, logID, StartDate, JoinTime, InGame),
                             )
-                            mycursor.execute(sql)
                             await botsql.botmydb()
                             await lchannel.send(
                                 f":airplane_arriving: New player **{logJoin}** has joined the party!"
@@ -148,20 +152,18 @@ class MainBot(commands.Cog):
                         else:
                             Info = Info[0]
                             if Info[1] == 1:
-                                sql = (
-                                    """UPDATE players SET valid = '%s' WHERE id = '%s'"""
-                                    % (logID, Info[0])
+                                mycursor.execute(
+                                    """UPDATE players SET valid = %s WHERE id = %s""",
+                                    (logID, Info[0]),
                                 )
-                                mycursor.execute(sql)
                                 await botsql.botmydb()
                             else:
                                 JoinTime = int(time.time())
                                 InGame = 1
-                                sql = (
-                                    """UPDATE players SET valid = '%s', jointime = '%s', ingame = '%s' WHERE user = '%s'"""
-                                    % (logID, JoinTime, InGame, logJoin)
+                                mycursor.execute(
+                                    """UPDATE players SET valid = %s, jointime = %s, ingame = %s WHERE user = %s""",
+                                    (logID, JoinTime, InGame, logJoin),
                                 )
-                                mycursor.execute(sql)
                                 await botsql.botmydb()
                                 await lchannel.send(
                                     f":airplane_arriving: **{logJoin}** has joined the party!"
@@ -174,11 +176,10 @@ class MainBot(commands.Cog):
                         logquit = re.search(pquit, line).group(1)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = (
-                            """SELECT id, user, jointime, playtime FROM players WHERE valid = '%s'"""
-                            % (logquit)
+                        mycursor.execute(
+                            """SELECT id, user, jointime, playtime FROM players WHERE valid = %s""",
+                            (logquit,),
                         )
-                        mycursor.execute(sql)
                         Info = mycursor.fetchall()
                         row_count = mycursor.rowcount
                         if row_count == 1:
@@ -187,11 +188,10 @@ class MainBot(commands.Cog):
                             Ptime = EndTime - Info[2] + Info[3]
                             ponline = await self.convert(EndTime - Info[2])
                             InGame = 0
-                            sql = (
-                                """UPDATE players SET playtime = '%s', ingame = '%s' WHERE id = '%s'"""
-                                % (Ptime, InGame, Info[0])
+                            mycursor.execute(
+                                """UPDATE players SET playtime = %s, ingame = %s WHERE id = %s""",
+                                (Ptime, InGame, Info[0]),
                             )
-                            mycursor.execute(sql)
                             await botsql.botmydb()
                             await lchannel.send(
                                 f":airplane_departure: **{Info[1]}** has left the party! Online for: {ponline}"
@@ -199,16 +199,15 @@ class MainBot(commands.Cog):
                         mycursor.close()
                         if not self.crossplay:
                             await self.serverstatsupdate()
-                    # Annocing that a boss location was found
+                    # Announcing that a boss location was found
                     if re.search(pfind, line):
                         newitem = re.search(pfind, line).group(1)
                         botsql = self.bot.get_cog("BotSQL")
                         mycursor = await botsql.get_cursor()
-                        sql = (
-                            """SELECT type, smessage, image FROM events WHERE type = '%s' LIMIT 1"""
-                            % (newitem)
+                        mycursor.execute(
+                            """SELECT type, smessage, image FROM events WHERE type = %s LIMIT 1""",
+                            (newitem,),
                         )
-                        mycursor.execute(sql)
                         Info = mycursor.fetchall()
                         try:
                             Info = Info[0]
@@ -216,11 +215,11 @@ class MainBot(commands.Cog):
                             logger.error(
                                 f"Could not find boss location info for {newitem} in the database."
                             )
-                        image = discord.File("img/" + Info[2], filename=Info[2])
+                        image = discord.File(f"img/{Info[2]}", filename=Info[2])
                         embed = discord.Embed(
                             title=Info[0], colour=discord.Colour(0x77AC18)
                         )
-                        embed.set_thumbnail(url="attachment://" + Info[2])
+                        embed.set_thumbnail(url=f"attachment://{Info[2]}")
                         embed.set_author(name="📢 Location Found")
                         await lchannel.send(file=image, embed=embed)
                         mycursor.close()
@@ -231,11 +230,10 @@ class MainBot(commands.Cog):
                             save1 = re.search(ssaved1, line).group(1)
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
-                            sql = (
-                                """INSERT INTO exstats (savezdos, timestamp) VALUES ('%s', '%s')"""
-                                % (save1, int(time.time()))
+                            mycursor.execute(
+                                """INSERT INTO exstats (savezdos, timestamp) VALUES (%s, %s)""",
+                                (save1, int(time.time())),
                             )
-                            mycursor.execute(sql)
                             await botsql.botmydb()
                             mycursor.close()
                         # Getting time it took for the save
@@ -244,33 +242,32 @@ class MainBot(commands.Cog):
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
                             tlookup = int(time.time()) - 60
-                            sql = (
-                                """SELECT id FROM exstats WHERE savesec is null AND timestamp BETWEEN '%s' AND '%s' LIMIT 1"""
-                                % (tlookup, int(time.time()))
+                            mycursor.execute(
+                                """SELECT id FROM exstats WHERE savesec is null AND timestamp BETWEEN %s AND %s LIMIT 1""",
+                                (tlookup, int(time.time())),
                             )
-                            mycursor.execute(sql)
                             Info = mycursor.fetchall()
                             row_count = mycursor.rowcount
                             if row_count == 1:
                                 Info = Info[0]
                                 if config.WORLDSIZE:
-                                    sql = (
-                                        """UPDATE exstats SET savesec = '%s', worldsize = '%s' WHERE id = '%s'"""
-                                        % (
+                                    mycursor.execute(
+                                        """UPDATE exstats SET savesec = %s, worldsize = %s WHERE id = %s""",
+                                        (
                                             save2,
                                             "{:,.2f}".format(
                                                 os.path.getsize(config.worldfile)
                                                 / float(1 << 20)
                                             ),
                                             Info[0],
-                                        )
+                                        ),
                                     )
                                 else:
-                                    sql = (
-                                        """UPDATE exstats SET savesec = '%s' WHERE id = '%s'"""
-                                        % (save2, Info[0])
+                                    mycursor.execute(
+                                        """UPDATE exstats SET savesec = %s WHERE id = %s""",
+                                        (save2, Info[0]),
                                     )
-                                mycursor.execute(sql)
+                                    logger.debug(f"Last save took: {save2}ms.")
                                 await botsql.botmydb()
                             else:
                                 logger.error("Could not find save zdos info")
@@ -280,8 +277,9 @@ class MainBot(commands.Cog):
                             serversion = re.search(sversion, line).group(1)
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
-                            sql = """SELECT id, serverversion FROM serverinfo WHERE id = 1"""
-                            mycursor.execute(sql)
+                            mycursor.execute(
+                                """SELECT id, serverversion FROM serverinfo WHERE id = 1"""
+                            )
                             Info = mycursor.fetchall()
                             row_count = mycursor.rowcount
                             if row_count == 0:
@@ -291,11 +289,10 @@ class MainBot(commands.Cog):
                             else:
                                 Info = Info[0]
                                 if serversion != Info[1]:
-                                    sql = (
-                                        """UPDATE serverinfo SET serverversion = '%s' WHERE id = '%s'"""
-                                        % (serversion, Info[0])
+                                    mycursor.execute(
+                                        """UPDATE serverinfo SET serverversion = %s WHERE id = %s""",
+                                        (serversion, Info[0]),
                                     )
-                                    mycursor.execute(sql)
                                     if config.CHECK_UPDATE:
                                         getupdateinfo = self.bot.get_cog(
                                             "UpdateNeeeded"
@@ -303,13 +300,16 @@ class MainBot(commands.Cog):
                                         valheiminfo = (
                                             await getupdateinfo.getvalheiminfo()
                                         )
-                                        sql1 = f"UPDATE serverinfo SET steamtime = '{valheiminfo}' WHERE id = 1"
-                                        mycursor.execute(sql1)
+                                        mycursor.execute(
+                                            """UPDATE serverinfo SET steamtime = %s WHERE id = 1""",
+                                            (valheiminfo,),
+                                        )
                                     await botsql.botmydb()
                                     await lchannel.send(
-                                        "**INFO:** Server has been updated to version: "
-                                        + serversion
-                                        + ""
+                                        f"**INFO:** Server has been updated to version: {serversion}"
+                                    )
+                                    logger.info(
+                                        f"Server has been updated to version: {serversion}"
                                     )
                             mycursor.close()
                         # Getting and storing game day in db (only reported in log when doing a sleep) reports day of sleep not day after waking up
@@ -317,13 +317,13 @@ class MainBot(commands.Cog):
                             gamedays = re.search(gdays, line).group(1)
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
-                            sql = f"UPDATE serverinfo SET gameday = '{gamedays}' WHERE id = 1"
-                            mycursor.execute(sql)
+                            mycursor.execute(
+                                """UPDATE serverinfo SET gameday = %s WHERE id = 1""",
+                                (gamedays,),
+                            )
                             await botsql.botmydb()
                             await lchannel.send(
-                                "**INFO:** Server reported in game day as: "
-                                + gamedays
-                                + ""
+                                f"**INFO:** Server reported in game day as: {gamedays}"
                             )
                             mycursor.close()
                     # Locations Info DB After this point
@@ -334,11 +334,10 @@ class MainBot(commands.Cog):
                             duration = re.search(ploc, line).group(2)
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
-                            sql = (
-                                """INSERT INTO plocinfo (zone, duration) VALUES ('%s', '%s')"""
-                                % (zone, duration)
+                            mycursor.execute(
+                                """INSERT INTO plocinfo (zone, duration) VALUES (%s, %s)""",
+                                (zone, duration),
                             )
-                            mycursor.execute(sql)
                             await botsql.botmydb()
                             mycursor.close()
                         # Add total locations to db
@@ -346,26 +345,25 @@ class MainBot(commands.Cog):
                             location = re.search(tloc, line).group(1)
                             botsql = self.bot.get_cog("BotSQL")
                             mycursor = await botsql.get_cursor()
-                            sql = """SELECT id, locations FROM plocinfo WHERE locations IS NOT NULL"""
-                            mycursor.execute(sql)
+                            mycursor.execute(
+                                """SELECT id, locations FROM plocinfo WHERE locations IS NOT NULL"""
+                            )
                             Info = mycursor.fetchall()
                             row_count = mycursor.rowcount
                             if row_count == 0:
-                                sql = (
-                                    """INSERT INTO plocinfo (locations) VALUES ('%s')"""
-                                    % (location)
+                                mycursor.execute(
+                                    """INSERT INTO plocinfo (locations) VALUES (%s)""",
+                                    (location,),
                                 )
-                                mycursor.execute(sql)
                                 await botsql.botmydb()
                                 logger.info(f"{location} Locations Loaded")
                             else:
                                 Info = Info[0]
                                 if location != Info[1]:
-                                    sql = (
-                                        """UPDATE plocinfo SET locations = '%s' WHERE id = '%s'"""
-                                        % (location, Info[0])
+                                    mycursor.execute(
+                                        """UPDATE plocinfo SET locations = %s WHERE id = %s""",
+                                        (location, Info[0]),
                                     )
-                                    mycursor.execute(sql)
                                     await botsql.botmydb()
                                     logger.info(
                                         f"Locations has been updated to: {location}"
@@ -397,12 +395,12 @@ class MainBot(commands.Cog):
     @mainloop.before_loop
     async def before_mainloop(self):
         await self.bot.wait_until_ready()
-        logger.info("Valheim Discord Bot V3.0.1")
+        logger.info("Valheim Discord Bot V4.0.0")
         logger.info(f"Bot connected as {self.bot.user}")
         logger.info(f"Command prefix: {config.BOT_PREFIX}")
         logger.info(f"Log channel: #{self.bot.get_channel(config.LOGCHAN_ID)}")
         if config.USEVCSTATS == True:
-            logger.info(f"VoIP channel: {self.bot.get_channel(config.VCHANNEL_ID)}")
+            logger.info(f"VoIP channel: #{self.bot.get_channel(config.VCHANNEL_ID)}")
             if self.bot.get_channel(config.VCHANNEL_ID) == None:
                 logger.warn(
                     "USEVCSTATS is set to True, but VCHANNEL_ID returns no channel."
@@ -479,8 +477,9 @@ class MainBot(commands.Cog):
             logger.debug(f"Version check loop got version {serversion}")
             botsql = self.bot.get_cog("BotSQL")
             mycursor = await botsql.get_cursor()
-            sql = """SELECT id, serverversion FROM serverinfo WHERE id = 1"""
-            mycursor.execute(sql)
+            mycursor.execute(
+                """SELECT id, serverversion FROM serverinfo WHERE id = 1"""
+            )
             Info = mycursor.fetchall()
             row_count = mycursor.rowcount
             if row_count == 0:
@@ -490,16 +489,13 @@ class MainBot(commands.Cog):
             else:
                 Info = Info[0]
                 if serversion != Info[1]:
-                    sql = (
-                        """UPDATE serverinfo SET serverversion = '%s' WHERE id = '%s'"""
-                        % (serversion, Info[0])
+                    mycursor.execute(
+                        """UPDATE serverinfo SET serverversion = %s WHERE id = %s""",
+                        (serversion, Info[0]),
                     )
-                    mycursor.execute(sql)
                     await botsql.botmydb()
                     await lchannel.send(
-                        "**INFO:** Server has been updated to version: "
-                        + serversion
-                        + ""
+                        f"**INFO:** Server has been updated to version: {serversion}"
                     )
             mycursor.close()
         except Exception:

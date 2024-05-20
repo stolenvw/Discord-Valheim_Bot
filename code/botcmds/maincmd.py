@@ -75,29 +75,25 @@ class Main(commands.Cog):
         )
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = (
-            """SELECT user, deaths FROM players WHERE deaths > 0 ORDER BY deaths DESC LIMIT %s"""
-            % (arg)
+        mycursor.execute(
+            """SELECT user, deaths FROM players WHERE deaths > 0 ORDER BY deaths DESC LIMIT %s""",
+            (arg,),
         )
-        mycursor.execute(sql)
         Info = mycursor.fetchall()
-        row_count = mycursor.rowcount
-        l = 1
-        for ind in Info:
+        for l, ind in enumerate(Info):
             grammarnazi = "deaths"
             leader = ""
             pdname = ind[0]
             pddeath = ind[1]
             if pddeath == 1:
                 grammarnazi = "death"
-            if l == 1:
+            if l == 0:
                 leader = ":crown:"
             ldrembed.add_field(
-                name="{} {}".format(pdname, leader),
-                value="{} {}".format(pddeath, grammarnazi),
+                name=f"{pdname} {leader}",
+                value=f"{pddeath} {grammarnazi}",
                 inline=False,
             )
-            l += 1
         mycursor.close()
         await interaction.response.send_message(embed=ldrembed)
 
@@ -113,22 +109,19 @@ class Main(commands.Cog):
     async def playstats(self, interaction: discord.Integration, arg: str):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = (
-            """SELECT user, deaths, startdate, playtime FROM players WHERE user = '%s'"""
-            % (arg)
+        mycursor.execute(
+            """SELECT user, deaths, startdate, playtime FROM players WHERE user = %s""",
+            (arg,),
         )
-        mycursor.execute(sql)
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 1:
             Info = Info[0]
             plsembed = discord.Embed(
-                title=":bar_chart: __Player Stats For " + Info[0] + "__ :bar_chart:",
+                title=f":bar_chart: __Player Stats For {Info[0]}__ :bar_chart:",
                 color=0x4A90E2,
             )
-            plsembed.add_field(
-                name="Server Join Date:", value="{}".format(Info[2]), inline=True
-            )
+            plsembed.add_field(name="Server Join Date:", value=Info[2], inline=True)
             plsembed.add_field(
                 name="Play Time:", value=str(timedelta(seconds=Info[3])), inline=True
             )
@@ -150,8 +143,9 @@ class Main(commands.Cog):
     async def actives(self, interaction: discord.Integration):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT user, jointime FROM players WHERE ingame = 1 ORDER BY jointime LIMIT 10"""
-        mycursor.execute(sql)
+        mycursor.execute(
+            """SELECT user, jointime FROM players WHERE ingame = 1 ORDER BY jointime LIMIT 10"""
+        )
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 0:
@@ -169,8 +163,8 @@ class Main(commands.Cog):
                 onfor = "Online For:"
                 ponline = str(timedelta(seconds=EndTime - ind[1]))
                 ldrembed.add_field(
-                    name="{}".format(pname),
-                    value="{} {}".format(onfor, ponline),
+                    name=pname,
+                    value=f"{onfor} {ponline}",
                     inline=False,
                 )
             await interaction.response.send_message(embed=ldrembed)
@@ -186,14 +180,13 @@ class Main(commands.Cog):
     async def versions(self, interaction: discord.Integration):
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT serverversion FROM serverinfo WHERE id = 1"""
-        mycursor.execute(sql)
+        mycursor.execute("""SELECT serverversion FROM serverinfo WHERE id = 1""")
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 1:
             Info = Info[0]
             sembed = discord.Embed(title="Server Versions", color=0x407500)
-            sembed.add_field(name="Valheim:", value="{}".format(Info[0]), inline=True)
+            sembed.add_field(name="Valheim:", value=Info[0], inline=True)
             await interaction.response.send_message(embed=sembed)
         else:
             await interaction.response.send_message(
@@ -207,7 +200,9 @@ class Main(commands.Cog):
     )
     @app_commands.rename(arg="activity")
     @app_commands.rename(arg1="message")
-    @app_commands.default_permissions(use_application_commands=True, send_messages=True, administrator=True)
+    @app_commands.default_permissions(
+        use_application_commands=True, send_messages=True, administrator=True
+    )
     @app_commands.checks.bot_has_permissions(send_messages=True)
     async def _setstatus(
         self,
@@ -238,14 +233,17 @@ class Main(commands.Cog):
         name="savestats",
         description="Shows how many zods where saved and time it took to save them.",
     )
-    @app_commands.default_permissions(use_application_commands=True, send_messages=True, administrator=True)
+    @app_commands.default_permissions(
+        use_application_commands=True, send_messages=True, administrator=True
+    )
     @app_commands.checks.bot_has_permissions(send_messages=True)
     async def savestats(self, interaction: discord.Integration):
         if config.EXSERVERINFO == True:
             botsql = self.bot.get_cog("BotSQL")
             mycursor = await botsql.get_cursor()
-            sql = """SELECT savezdos, savesec, worldsize, timestamp FROM exstats WHERE savesec is not null AND savezdos is not null ORDER BY timestamp DESC LIMIT 1"""
-            mycursor.execute(sql)
+            mycursor.execute(
+                """SELECT savezdos, savesec, worldsize, timestamp FROM exstats WHERE savesec is not null AND savezdos is not null ORDER BY timestamp DESC LIMIT 1"""
+            )
             Info = mycursor.fetchall()
             row_count = mycursor.rowcount
             if row_count == 1:
@@ -256,15 +254,11 @@ class Main(commands.Cog):
                     timestamp=datetime.fromtimestamp(Info[3]),
                 )
                 sembed.set_footer(text="Last saved")
-                sembed.add_field(
-                    name="Zdos Saved:", value="{}".format(Info[0]), inline=True
-                )
-                sembed.add_field(
-                    name="Saving Took:", value="{}ms".format(Info[1]), inline=True
-                )
+                sembed.add_field(name="Zdos Saved:", value=Info[0], inline=True)
+                sembed.add_field(name="Saving Took:", value=f"{Info[1]}ms", inline=True)
                 if config.WORLDSIZE == True:
                     sembed.add_field(
-                        name="World Size:", value="{}MB".format(Info[2]), inline=True
+                        name="World Size:", value=f"{Info[2]}MB", inline=True
                     )
                 await interaction.response.send_message(embed=sembed, ephemeral=True)
             else:
@@ -292,8 +286,7 @@ class Main(commands.Cog):
         )
         botsql = self.bot.get_cog("BotSQL")
         mycursor = await botsql.get_cursor()
-        sql = """SELECT jocode FROM serverinfo WHERE id = 1 LIMIT 1"""
-        mycursor.execute(sql)
+        mycursor.execute("""SELECT jocode FROM serverinfo WHERE id = 1 LIMIT 1""")
         Info = mycursor.fetchall()
         row_count = mycursor.rowcount
         if row_count == 0:
@@ -309,6 +302,28 @@ class Main(commands.Cog):
             )
             await interaction.response.send_message(embed=ldrembed)
         mycursor.close()
+
+    # server command
+    @app_commands.command(
+        name="server",
+        description="Shows connect info for server, and if its online.",
+    )
+    @app_commands.default_permissions(use_application_commands=True, send_messages=True)
+    @app_commands.checks.bot_has_permissions(send_messages=True)
+    async def _serverinfo(self, interaction: discord.Integration):
+        sembed = discord.Embed(title="Server connection info and status.", color=0x407500)
+        sembed.set_footer(text=f"Password: {config.SERVER_PASS}")
+        online = await self.bot.get_cog("MainBot").getserverstatus()
+        if online:
+            sonline = ":green_circle: ON-Line"
+        else:
+            sonline = ":red_circle: OFF-Line"
+        sembed.add_field(
+                        name=config.SERVER_NAME,
+                        value=f"{sonline} @ {config.SERVER_INFO}",
+                        inline=False,
+                    )
+        await interaction.response.send_message(embed=sembed)
 
 
 async def setup(bot):

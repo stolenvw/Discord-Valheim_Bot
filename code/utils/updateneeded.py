@@ -4,7 +4,7 @@ from datetime import datetime
 from discord.ext import commands, tasks
 from steam.client import SteamClient
 from steam.enums import EResult
-from config import LOGCHAN_ID, LOG_LEVEL, SERVER_NAME
+from config import LOGCHAN_ID, LOG_LEVEL, SERVER_NAME, VALHEIM_BRANCH
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class UpdateNeeeded(commands.Cog):
             try:
                 valheiminfo = client.get_product_info(apps=[896660], timeout=5)["apps"][
                     896660
-                ]["depots"]["branches"]["public"]["timeupdated"]
+                ]["depots"]["branches"][VALHEIM_BRANCH]["timeupdated"]
                 return int(valheiminfo)
             except Exception as e:
                 logger.error(f"Failed to get last update time from steam: {e}")
@@ -39,8 +39,8 @@ class UpdateNeeeded(commands.Cog):
             logger.debug("Steam login successful")
             valheiminfo = client.get_product_info(apps=[896660], timeout=5)["apps"][
                 896660
-            ]["depots"]["branches"]["public"]["timeupdated"]
-            logger.debug(f"Got server public branch last update time as {valheiminfo}")
+            ]["depots"]["branches"][VALHEIM_BRANCH]["timeupdated"]
+            logger.debug(f"Got server {VALHEIM_BRANCH} branch last update time as {valheiminfo}")
             client.logout()
             logger.debug("Steam logout")
             return int(valheiminfo)
@@ -66,32 +66,28 @@ class UpdateNeeeded(commands.Cog):
             needwarring = 0
             self.botsql = self.bot.get_cog("BotSQL")
             mycursor = await self.botsql.get_cursor()
-            sql = """SELECT upnotify, steamtime FROM serverinfo WHERE id = '1'"""
-            mycursor.execute(sql)
+            mycursor.execute("""SELECT upnotify, steamtime FROM serverinfo WHERE id = '1'""")
             Info = mycursor.fetchall()
             await self.botsql.botmydb()
             if valheiminfo == Info[0][1] or Info[0][1] is None:
                 logger.debug("Server is running current version rechecking in (1H)...")
                 if Info[0][1] is None:
-                    sql = f"UPDATE serverinfo SET steamtime = '{valheiminfo}' WHERE id = '1'"
-                    mycursor.execute(sql)
+                    mycursor.execute("""UPDATE serverinfo SET steamtime = %s WHERE id = '1'""", (valheiminfo,))
                     await self.botsql.botmydb()
                 if Info[0][0] == 1:
-                    sql = """UPDATE serverinfo SET upnotify = '0' WHERE id = '1'"""
-                    mycursor.execute(sql)
+                    mycursor.execute("""UPDATE serverinfo SET upnotify = '0' WHERE id = '1'""")
                     await self.botsql.botmydb()
             else:
                 logger.warning(
-                    f"Server is running outdated version, please update server. New version released on {valheimupdatetime} Rechecking in (1H)..."
+                    f"Server is running outdated version, please update server. New {VALHEIM_BRANCH} branch version released on {valheimupdatetime} Rechecking in (1H)..."
                 )
                 if Info[0][0] == 0:
                     needwarring = 1
-                    sql = """UPDATE serverinfo SET upnotify = '1' WHERE id = '1'"""
-                    mycursor.execute(sql)
+                    mycursor.execute("""UPDATE serverinfo SET upnotify = '1' WHERE id = '1'""")
                     await self.botsql.botmydb()
                     ldrembed.add_field(
                         name=f"{SERVER_NAME}:",
-                        value=f"New version released on steam at {valheimupdatetime}",
+                        value=f"New {VALHEIM_BRANCH} branch version released on steam at {valheimupdatetime}",
                         inline=False,
                     )
             mycursor.close()
