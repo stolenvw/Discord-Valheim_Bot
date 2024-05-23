@@ -16,7 +16,7 @@ TABLES["events"] = (
     " `smessage` text NOT NULL,"
     " `image` text NOT NULL,"
     " PRIMARY KEY (`id`),"
-    " UNIQUE KEY `type` (`type`) USING BTREE"
+    " UNIQUE KEY `type` (`type`(50)) USING BTREE"
     ") ENGINE=InnoDB"
 )
 
