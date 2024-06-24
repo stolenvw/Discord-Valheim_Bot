@@ -1,4 +1,4 @@
-discord.py==2.3.2
+discord.py==2.4.0
 mysqlclient==2.2.4
 colorama==0.4.6
 emoji==2.12.1
